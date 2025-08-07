@@ -1,2 +1,0 @@
-# Plugin-VPN
-Wordpress VPN
