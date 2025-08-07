@@ -1,0 +1,16 @@
+name: 🔌 Test SFTP Connection
+
+on:
+  workflow_dispatch:  # lets you trigger it manually
+
+jobs:
+  test-sftp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Try connecting to SFTP and list directory
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          server-dir: /public_html/
