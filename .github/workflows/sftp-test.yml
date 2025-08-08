@@ -1,16 +1,23 @@
-name: 🔌 Test SFTP Connection
+name: 🚀 Deploy to WordPress via SFTP
 
 on:
-  workflow_dispatch:  # lets you trigger it manually
+  push:
+    branches:
+      - main
 
 jobs:
-  test-sftp:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Try connecting to SFTP and list directory
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Upload to cPanel via SFTP
+        uses: appleboy/scp-action@v0.1.4
         with:
-          server: ${{ secrets.FTP_HOST }}
+          host: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
-          server-dir: /public_html/
+          port: 22
+          source: "./"  # Adjust as needed
+          target: "/home/ebmohsen/public_html/wp-content/plugins/vpn/"
