@@ -12,12 +12,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Upload to cPanel via SFTP
+      - name: Upload via SFTP
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          port: 22
-          source: "./"  # Adjust as needed
-          target: "/home/ebmohsen/public_html/wp-content/plugins/vpn/"
+          host: ${{ secrets.FTP_HOST }}           # e.g. ebmohsen.com or IP
+          username: ${{ secrets.FTP_USER }}       # e.g. githubmohsen@ebmohsen.com
+          password: ${{ secrets.FTP_PASS }}       # your FTP password
+          port: 22                                # <--- This is key for SFTP
+          source: "./"
+          target: "/home/YOURCPANELUSER/public_html/wp-content/plugins/vpn-profile-manager"
