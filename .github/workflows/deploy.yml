@@ -20,4 +20,4 @@ jobs:
           password: ${{ secrets.FTP_PASS }}       # your FTP password
           port: 22                                # <--- This is key for SFTP
           source: "./"
-          target: "/home/ebmohsen/public_html/wp-content/plugins/vpn-server-manager"
+          target: "/public_html/wp-content/plugins/vpn-server-manager"
