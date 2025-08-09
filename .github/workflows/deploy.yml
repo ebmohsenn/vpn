@@ -21,4 +21,4 @@ jobs:
           protocol: ftp               # or ftps if your host supports it
           port: 21                   # FTP port
           local-dir: ./vpn-server-manager/
-          server-dir: /public_html/wp-content/plugins/vpn-server-manager
+          server-dir: /public_html/wp-content/plugins/vpn-server-manager/
