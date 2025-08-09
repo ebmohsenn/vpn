@@ -1,4 +1,4 @@
-name: 🚀 Deploy to WordPress via FTP
+name: 🚀 Deploy to WordPress via FTPS
 
 on:
   push:
@@ -8,17 +8,18 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Deploy plugin via FTP
+      - name: Deploy plugin via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
-          protocol: ftp               # or ftps if your host supports it
-          port: 21                   # FTP port
+          protocol: ftps
+          port: 21
           local-dir: ./vpn-server-manager/
           server-dir: /public_html/wp-content/plugins/vpn-server-manager/
