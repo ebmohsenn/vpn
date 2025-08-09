@@ -3,7 +3,7 @@ name: 🚀 Deploy to WordPress via SFTP
 on:
   push:
     branches:
-      - main  # Change to 'master' if you're using that
+      - main
 
 jobs:
   deploy:
@@ -12,10 +12,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Upload to cPanel via SFTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: Upload via SFTP
+        uses: appleboy/scp-action@v0.1.4
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          server-dir: /public_html/wp-content/plugins/vpn-profile-manager/
+          host: ${{ secrets.FTP_HOST }}           # e.g. ebmohsen.com or IP
+          username: ${{ secrets.FTP_USER }}       # e.g. githubmohsen@ebmohsen.com
+          password: ${{ secrets.FTP_PASS }}       # your FTP password
+          port: 22                                # <--- This is key for SFTP
+          source: "./"
+          target: "/home/YOURCPANELUSER/public_html/wp-content/plugins/vpn-profile-manager"
