@@ -1,6 +1,8 @@
 <?php
 // Back-compat loader. Do not add plugin headers here.
 require_once __DIR__ . '/vpn-server-manager.php';
+
+/*
  * Description: Upload, parse, manage, test, and download OpenVPN (.ovpn) profiles.
  * Version: 1.0.0
  * Author: Your Name

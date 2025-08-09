@@ -104,16 +104,3 @@ function vpnpm_admin_page() {
     </div>
     <?php
 } // end vpnpm_admin_page
-                        <label for="notes"><?php esc_html_e('Notes (optional)', 'vpnpm'); ?></label>
-                        <textarea id="notes" name="notes" rows="3" placeholder="<?php esc_attr_e('Add optional notes...', 'vpnpm'); ?>"></textarea>
-                    </div>
-                    <div class="vpnpm-modal-actions">
-                        <button type="button" class="button vpnpm-btn-secondary" id="vpnpm-cancel"><?php esc_html_e('Cancel', 'vpnpm'); ?></button>
-                        <button type="submit" class="button button-primary vpnpm-btn-primary"><?php esc_html_e('Upload', 'vpnpm'); ?></button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <?php
-}
