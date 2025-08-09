@@ -76,3 +76,28 @@ function vpnpm_ajax_download_config() {
     readfile($path);
     exit;
 }
+
+// AJAX: Delete profile
+add_action('wp_ajax_vpnpm_delete_profile', 'vpnpm_ajax_delete_profile');
+function vpnpm_ajax_delete_profile() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => __('Unauthorized', 'vpnpm')], 403);
+    }
+    check_ajax_referer('vpnpm-nonce');
+
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if (!$id) {
+        wp_send_json_error(['message' => __('Invalid ID', 'vpnpm')], 400);
+    }
+
+    // Delete file if exists
+    vpnpm_delete_config_file($id);
+
+    // Delete DB row
+    $deleted = vpnpm_delete_profile($id);
+    if ($deleted === false) {
+        wp_send_json_error(['message' => __('Failed to delete profile.', 'vpnpm')]);
+    }
+
+    wp_send_json_success(['id' => $id]);
+}

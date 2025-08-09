@@ -1,6 +1,6 @@
 <?php
-// Back-compat loader. Do not add plugin headers here.
-require_once __DIR__ . '/vpn-server-manager.php';
+/**
+ * Plugin Name: vpn-server-manager
  * Description: Upload, parse, manage, test, and download OpenVPN (.ovpn) profiles.
  * Version: 1.0.0
  * Author: Your Name
@@ -45,7 +45,8 @@ function vpnpm_add_admin_menu() {
 // Admin assets
 add_action('admin_enqueue_scripts', 'vpnpm_admin_assets');
 function vpnpm_admin_assets($hook) {
-    if ($hook !== 'toplevel_page_vpn-manager') {
+    // Ensure scripts load on our admin page and its subpages
+    if (strpos((string)$hook, 'vpn-manager') === false) {
         return;
     }
     wp_enqueue_style('vpnpm-admin', VPNPM_PLUGIN_URL . 'assets/css/admin.css', [], VPNPM_VERSION);
@@ -56,6 +57,7 @@ function vpnpm_admin_assets($hook) {
         'strings' => [
             'testing' => __('Testing...', 'vpnpm'),
             'tested'  => __('Tested', 'vpnpm'),
+            'confirmDelete' => __('Delete this server? This cannot be undone.', 'vpnpm'),
         ],
     ]);
 }

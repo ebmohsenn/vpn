@@ -36,7 +36,6 @@ function vpnpm_admin_page() {
                 <button type="button" class="button vpnpm-btn-secondary" id="vpnpm-test-all"><?php esc_html_e('Test All', 'vpnpm'); ?></button>
                 <button type="button" class="button vpnpm-btn-secondary"><?php esc_html_e('Logs', 'vpnpm'); ?></button>
                 <button type="button" class="button vpnpm-btn-secondary"><?php esc_html_e('Settings', 'vpnpm'); ?></button>
-                <button type="button" class="button vpnpm-btn-secondary"><?php esc_html_e('Customer View', 'vpnpm'); ?></button>
                 <button type="button" class="button button-primary vpnpm-btn-primary" id="vpnpm-add-server-btn">+ <?php esc_html_e('Add Server', 'vpnpm'); ?></button>
             </div>
         </div>
@@ -80,6 +79,7 @@ function vpnpm_admin_page() {
                     <div class="vpnpm-card-footer">
                         <button class="button vpnpm-btn-secondary vpnpm-test-btn" data-id="<?php echo (int)$p->id; ?>"><?php esc_html_e('Test', 'vpnpm'); ?></button>
                         <a class="button vpnpm-btn-primary" href="<?php echo esc_url($download_url); ?>"><?php esc_html_e('Download Config', 'vpnpm'); ?></a>
+                        <button class="button vpnpm-btn-danger vpnpm-delete-btn" data-id="<?php echo (int)$p->id; ?>"><?php esc_html_e('Delete', 'vpnpm'); ?></button>
                     </div>
                 </div>
                 <?php endforeach; ?>

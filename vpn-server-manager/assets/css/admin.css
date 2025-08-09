@@ -1,0 +1,10 @@
+.vpnpm-btn-danger {
+  background: linear-gradient(180deg, #ef4444, #dc2626) !important;
+  color: #fff !important;
+  border: 1px solid #dc2626 !important;
+  box-shadow: 0 2px 6px rgba(239,68,68,0.3);
+}
+.vpnpm-btn-danger:hover {
+  background: linear-gradient(180deg, #f15555, #e03131) !important;
+  color: #fff !important;
+}

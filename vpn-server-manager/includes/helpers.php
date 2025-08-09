@@ -25,6 +25,13 @@ function vpnpm_store_config_file($id, $tmp_path) {
     return @move_uploaded_file($tmp_path, $dest);
 }
 
+function vpnpm_delete_config_file($id) {
+    $path = vpnpm_config_file_path($id);
+    if (file_exists($path)) {
+        @unlink($path);
+    }
+}
+
 function vpnpm_status_class($status) {
     $status = strtolower((string)$status);
     if ($status === 'active' || $status === 'up') return 'badge badge-green';
