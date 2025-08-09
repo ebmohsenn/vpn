@@ -1,4 +1,4 @@
-name: 🚀 Deploy to WordPress via SFTP
+name: 🚀 Deploy to WordPress via FTP
 
 on:
   push:
@@ -9,15 +9,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Upload via SFTP
-        uses: appleboy/scp-action@v0.1.4
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          host: ${{ secrets.FTP_HOST }}           # e.g. ebmohsen.com or IP
-          username: ${{ secrets.FTP_USER }}       # e.g. githubmohsen@ebmohsen.com
-          password: ${{ secrets.FTP_PASS }}       # your FTP password
-          port: 22                                # <--- This is key for SFTP
-          source: "./"
-          target: "/home/ebmohsen/public_html/wp-content/plugins/vpn-server-manager"
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          protocol: ftp                 # use ftp or ftps (ftps is FTP over TLS)
+          port: 21                     # default FTP port
+          local-dir: ./vpn-profile-manager  # your local plugin folder or repo root
+          server-dir: /public_html/wp-content/plugins/vpn-profile-manager  # remote target path
