@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/ebmohsen/public_html/wp-content/plugins/vpn-server-manager/
+    - /bin/cp -R vpn-server-manager/* $DEPLOYPATH
