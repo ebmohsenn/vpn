@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: VPN Profile Manager
+ * Plugin Name: vpn-server-manager
  * Description: Upload, parse, manage, test, and download OpenVPN (.ovpn) profiles.
  * Version: 1.0.0
  * Author: Your Name
