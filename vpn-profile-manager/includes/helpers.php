@@ -1,0 +1,97 @@
+<?php
+defined('ABSPATH') || exit;
+
+function vpnpm_get_upload_dir() {
+    $upload = wp_upload_dir();
+    $dir = trailingslashit($upload['basedir']) . 'vpn-profile-manager/';
+    if (!file_exists($dir)) {
+        wp_mkdir_p($dir);
+    }
+    return $dir;
+}
+
+function vpnpm_get_upload_url() {
+    $upload = wp_upload_dir();
+    return trailingslashit($upload['baseurl']) . 'vpn-profile-manager/';
+}
+
+function vpnpm_config_file_path($id) {
+    $dir = vpnpm_get_upload_dir();
+    return $dir . $id . '.ovpn';
+}
+
+function vpnpm_store_config_file($id, $tmp_path) {
+    $dest = vpnpm_config_file_path($id);
+    return @move_uploaded_file($tmp_path, $dest);
+}
+
+function vpnpm_status_class($status) {
+    $status = strtolower((string)$status);
+    if ($status === 'active' || $status === 'up') return 'badge badge-green';
+    if ($status === 'down') return 'badge badge-red';
+    if ($status === 'unknown') return 'badge badge-gray';
+    return 'badge badge-blue';
+}
+
+function vpnpm_sanitize_text($text) {
+    return sanitize_textarea_field($text);
+}
+
+// Admin upload handler (Add Server)
+add_action('admin_post_vpnpm_add_server', 'vpnpm_handle_upload');
+function vpnpm_handle_upload() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('Unauthorized', 'vpnpm'));
+    }
+    check_admin_referer('vpnpm-upload');
+
+    if (empty($_FILES['ovpn_file']) || $_FILES['ovpn_file']['error'] !== UPLOAD_ERR_OK) {
+        wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpn-manager')));
+        exit;
+    }
+
+    $file = $_FILES['ovpn_file'];
+    $name = sanitize_file_name($file['name']);
+    if (strtolower(pathinfo($name, PATHINFO_EXTENSION)) !== 'ovpn') {
+        wp_redirect(add_query_arg('vpnpm_msg', 'invalid_type', admin_url('admin.php?page=vpn-manager')));
+        exit;
+    }
+
+    $parse = vpnpm_parse_ovpn_file($file['tmp_name']);
+    if (is_wp_error($parse)) {
+        wp_redirect(add_query_arg('vpnpm_msg', 'parse_error', admin_url('admin.php?page=vpn-manager')));
+        exit;
+    }
+
+    $notes_input = isset($_POST['notes']) ? vpnpm_sanitize_text($_POST['notes']) : '';
+    $notes = trim($notes_input . "\n" . ($parse['notes'] ?? ''));
+    $notes = $notes !== '' ? $notes : null;
+
+    $data = [
+        'file_name'   => $name,
+        'remote_host' => $parse['remote_host'],
+        'port'        => (int)$parse['port'],
+        'protocol'    => $parse['protocol'],
+        'cipher'      => $parse['cipher'],
+        'status'      => 'unknown',
+        'notes'       => $notes,
+        'last_checked'=> null,
+        'created_at'  => current_time('mysql'),
+    ];
+
+    $id = vpnpm_insert_profile($data);
+    if (!$id) {
+        wp_redirect(add_query_arg('vpnpm_msg', 'db_error', admin_url('admin.php?page=vpn-manager')));
+        exit;
+    }
+
+    if (!vpnpm_store_config_file($id, $file['tmp_name'])) {
+        // Rollback DB if file move failed
+        vpnpm_delete_profile($id);
+        wp_redirect(add_query_arg('vpnpm_msg', 'store_error', admin_url('admin.php?page=vpn-manager')));
+        exit;
+    }
+
+    wp_redirect(add_query_arg('vpnpm_msg', 'added', admin_url('admin.php?page=vpn-manager')));
+    exit;
+}
