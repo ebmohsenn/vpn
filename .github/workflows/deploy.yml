@@ -12,13 +12,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Deploy via FTP
+      - name: Deploy plugin via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
-          protocol: ftp                 # use ftp or ftps (ftps is FTP over TLS)
-          port: 21                     # default FTP port
-          local-dir: ./vpn-profile-manager  # your local plugin folder or repo root
-          server-dir: /public_html/wp-content/plugins/vpn-profile-manager  # remote target path
+          protocol: ftp               # or ftps if your host supports it
+          port: 21                   # FTP port
+          local-dir: ./vpn-server-manager
+          server-dir: /public_html/wp-content/plugins/vpn-server-manager
