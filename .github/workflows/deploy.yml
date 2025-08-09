@@ -18,6 +18,6 @@ jobs:
           host: ${{ secrets.FTP_HOST }}           # e.g. ebmohsen.com or IP
           username: ${{ secrets.FTP_USER }}       # e.g. githubmohsen@ebmohsen.com
           password: ${{ secrets.FTP_PASS }}       # your FTP password
-          port: 22                                # <--- This is key for SFTP
+          port: 21                                # <--- This is key for SFTP
           source: "./"
           target: "/home/ebmohsen/public_html/wp-content/plugins/vpn-server-manager"
