@@ -132,11 +132,17 @@
 }
 
 .vpnpm-type.type-premium {
-    color: green;
+    background-color: green;
+    color: black;
+    padding: 2px 6px;
+    border-radius: 4px;
     font-weight: bold;
 }
 
 .vpnpm-type.type-standard {
-    color: yellow;
+    background-color: yellow;
+    color: black;
+    padding: 2px 6px;
+    border-radius: 4px;
     font-weight: bold;
 }
