@@ -24,7 +24,7 @@ require_once VPNSERVER_PLUGIN_DIR . 'admin/admin-page.php';
 // Activation
 register_activation_hook(__FILE__, 'vpnserver_activate_plugin');
 function vpnserver_activate_plugin() {
-    vpnpm_create_tables();
+    vpnpm_create_tables(); // or vpnserver_create_tables() if you renamed it
     flush_rewrite_rules();
 }
 
