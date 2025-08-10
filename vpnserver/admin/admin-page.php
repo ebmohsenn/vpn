@@ -62,10 +62,10 @@ $search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto .
 					<p>Protocol: <?php echo $proto; ?></p>
 					<p>Status:
 						<span class="vpnpm-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span>
-						<?php if (!empty($server->last_checked)): ?>
-							<small class="vpnpm-last-checked"><?php echo esc_html(sprintf('Last checked: %s', $server->last_checked)); ?></small>
-						<?php endif; ?>
 					</p>
+					<p>Last checked: <span class="vpnpm-last-checked" title="<?php echo esc_attr($server->last_checked); ?>">
+						<?php echo esc_html(human_time_diff(strtotime($server->last_checked), current_time('timestamp'))) . ' ago'; ?>
+					</span></p>
 					<p>Ping: <span class="vpnpm-ping"><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
 					<p>Notes: <?php echo $notes; ?></p>
 					<div>

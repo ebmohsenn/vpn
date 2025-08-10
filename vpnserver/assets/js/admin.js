@@ -208,11 +208,16 @@ setInterval(function() {
                 }
 
                 // Update last checked
-const lastCheckedDate = new Date(server.last_checked);
-const relative = timeAgo(lastCheckedDate);
-$card.find('.vpnpm-last-checked')
-  .text('Last checked: ' + relative)
-  .attr('title', lastCheckedDate.toLocaleString());            });
+                const lastCheckedDate = new Date(server.last_checked);
+                const relative = timeAgo(lastCheckedDate);
+                $card.find('.vpnpm-last-checked')
+                    .text('Last checked: ' + relative)
+                    .attr('title', lastCheckedDate.toLocaleString());
+
+                const $ping = $card.find('.vpnpm-ping');
+                const newPing = server.ping !== null ? server.ping + ' ms' : 'N/A';
+                $ping.text(newPing);
+            });
         }
     });
 }, 30000); // 30 seconds
