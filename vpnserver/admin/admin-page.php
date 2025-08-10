@@ -54,6 +54,13 @@ function vpnpm_admin_page() {
 					);
 $server_notes_safe = property_exists($server, 'notes') && $server->notes !== null ? $server->notes : '';
 $search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto . ' ' . $status_text . ' ' . $server_notes_safe);					$notes = property_exists($server, 'notes') && $server->notes !== null ? esc_html($server->notes) : esc_html__('No notes available', 'vpnserver');
+
+$last_checked = $server->last_checked ? strtotime($server->last_checked) : null;
+if ($last_checked) {
+    $last_checked_human = human_time_diff($last_checked, current_time('timestamp')) . ' ago';
+} else {
+    $last_checked_human = esc_html__('N/A', 'vpnserver');
+}
 				?>
 				<div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
 					<h3><?php echo $name; ?></h3>
@@ -64,7 +71,7 @@ $search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto .
 						<span class="vpnpm-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span>
 					</p>
 					<p>Last checked: <span class="vpnpm-last-checked" title="<?php echo esc_attr($server->last_checked); ?>">
-						<?php echo esc_html(human_time_diff(strtotime($server->last_checked), current_time('timestamp'))) . ' ago'; ?>
+						<?php echo esc_html($last_checked_human); ?>
 					</span></p>
 					<p>Ping: <span class="vpnpm-ping"><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
 					<p>Notes: <?php echo $notes; ?></p>
