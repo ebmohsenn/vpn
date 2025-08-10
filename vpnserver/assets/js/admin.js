@@ -216,6 +216,66 @@ setInterval(function() {
         }
     });
 }, 30000); // 30 seconds
+
+// Sort servers by status: active on top, down below
+function sortServers() {
+  const $grid = $('#vpnpm-grid');
+  const $cards = $grid.children('.vpnpm-card');
+
+  $cards.sort(function(a, b) {
+    const statusA = $(a).find('.vpnpm-status').text().toLowerCase();
+    const statusB = $(b).find('.vpnpm-status').text().toLowerCase();
+
+    if (statusA === 'active' && statusB !== 'active') return -1;
+    if (statusA !== 'active' && statusB === 'active') return 1;
+    if (statusA === 'down' && statusB !== 'down') return 1;
+    if (statusA !== 'down' && statusB === 'down') return -1;
+    return 0;
+  });
+
+  $grid.append($cards); // Re-append sorted cards to the grid
+}
+
+// Call sortServers after AJAX updates
+$(document).on('submit', '#vpnpm-edit-form', function(e) {
+  e.preventDefault();
+  const id = $('#vpnpm-edit-id').val();
+  const payload = {
+    action: 'vpnpm_update_profile',
+    _ajax_nonce: vpnpmAjax.nonce,
+    id: id,
+    remote_host: $('#vpnpm-edit-remote').val(),
+    port: $('#vpnpm-edit-port').val(),
+    protocol: $('#vpnpm-edit-protocol').val(),
+    cipher: $('#vpnpm-edit-cipher').val(),
+    status: $('#vpnpm-edit-status').val(),
+    notes: $('#vpnpm-edit-notes').val()
+  };
+  $.ajax({
+    url: vpnpmAjax.ajaxurl,
+    type: 'POST',
+    dataType: 'json',
+    data: payload
+  }).done(function(resp) {
+    if (resp && resp.success) {
+      const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + id + '"]').closest('.vpnpm-card');
+      const d = resp.data;
+      $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
+      $card.find('.vpnpm-status').text(d.status.charAt(0).toUpperCase() + d.status.slice(1));
+      sortServers(); // Sort servers after update
+      $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
+    } else {
+      alert((resp && resp.data && resp.data.message) || 'Update failed.');
+    }
+  }).fail(function() {
+    alert('Update failed.');
+  });
+});
+
+// Call sortServers on page load
+$(document).ready(function() {
+  sortServers();
+});
   });
 })(jQuery);
 
