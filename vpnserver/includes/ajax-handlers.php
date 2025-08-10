@@ -133,9 +133,6 @@ function vpnpm_ajax_get_profile() {
 	$p = vpnpm_get_profile_by_id($id);
 	if (!$p) wp_send_json_error(['message' => __('Not found', 'vpnserver')], 404);
 
-	// Ensure notes are properly fetched
-	$notes = property_exists($p, 'notes') && $p->notes !== null ? $p->notes : '';
-
 	wp_send_json_success([
 		'id' => (int)$p->id,
 		'file_name' => $p->file_name,
@@ -144,7 +141,8 @@ function vpnpm_ajax_get_profile() {
 		'protocol' => $p->protocol,
 		'cipher' => $p->cipher,
 		'status' => $p->status,
-		'notes' => $notes,
+		'notes' => $p->notes,
+		'label' => $p->label ?? 'standard', // Add label field
 		'last_checked' => $p->last_checked,
 	]);
 }
@@ -168,6 +166,7 @@ function vpnpm_ajax_update_profile() {
 		'cipher'      => isset($_POST['cipher']) ? sanitize_text_field(wp_unslash($_POST['cipher'])) : null,
 		'status'      => isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : null,
 		'notes'       => isset($_POST['notes']) ? sanitize_textarea_field(wp_unslash($_POST['notes'])) : null,
+		'label'       => isset($_POST['label']) ? sanitize_text_field(wp_unslash($_POST['label'])) : 'standard', // Add label field
 	];
 	// remove nulls
 	$data = array_filter($data, function($v){ return $v !== null; });
@@ -184,9 +183,6 @@ function vpnpm_ajax_update_profile() {
 	}
 	$p = vpnpm_get_profile_by_id($id);
 
-	// Ensure updated notes are returned
-	$notes = property_exists($p, 'notes') && $p->notes !== null ? $p->notes : '';
-
 	wp_send_json_success([
 		'id' => (int)$p->id,
 		'remote_host' => $p->remote_host,
@@ -194,7 +190,8 @@ function vpnpm_ajax_update_profile() {
 		'protocol' => $p->protocol,
 		'cipher' => $p->cipher,
 		'status' => $p->status,
-		'notes' => $notes,
+		'notes' => $p->notes,
+		'label' => $p->label ?? 'standard', // Add label field
 		'last_checked' => $p->last_checked,
 	]);
 }

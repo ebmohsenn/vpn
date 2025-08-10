@@ -118,6 +118,7 @@
           $('#vpnpm-edit-cipher').val(d.cipher || '');
           $('#vpnpm-edit-status').val((d.status || 'unknown').toLowerCase());
           $('#vpnpm-edit-notes').val(d.notes || '');
+          $('#vpnpm-edit-label').val((d.label || 'standard').toLowerCase()); // Add label field
         } else {
           alert((resp && resp.data && resp.data.message) || 'Failed to load profile.');
         }
@@ -149,7 +150,8 @@
         protocol: $('#vpnpm-edit-protocol').val(),
         cipher: $('#vpnpm-edit-cipher').val(),
         status: $('#vpnpm-edit-status').val(),
-        notes: $('#vpnpm-edit-notes').val()
+        notes: $('#vpnpm-edit-notes').val(),
+        label: $('#vpnpm-edit-label').val() // Add label to payload
       };
       $.ajax({
         url: vpnpmAjax.ajaxurl,
@@ -173,6 +175,7 @@
           $card.attr('data-search', hay);
           // Ensure notes are updated in the card after saving changes
           $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
+          $card.find('p:contains("Label:")').html('Label: <span class="vpnpm-label ' + (d.label === 'premium' ? 'label-premium' : 'label-standard') + '">' + (d.label.charAt(0).toUpperCase() + d.label.slice(1)) + '</span>');
           $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
         } else {
           alert((resp && resp.data && resp.data.message) || 'Update failed.');
@@ -252,7 +255,8 @@ $(document).on('submit', '#vpnpm-edit-form', function(e) {
     protocol: $('#vpnpm-edit-protocol').val(),
     cipher: $('#vpnpm-edit-cipher').val(),
     status: $('#vpnpm-edit-status').val(),
-    notes: $('#vpnpm-edit-notes').val()
+    notes: $('#vpnpm-edit-notes').val(),
+    label: $('#vpnpm-edit-label').val() // Add label to payload
   };
   $.ajax({
     url: vpnpmAjax.ajaxurl,
@@ -266,6 +270,7 @@ $(document).on('submit', '#vpnpm-edit-form', function(e) {
       $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
       $card.find('.vpnpm-status').text(d.status.charAt(0).toUpperCase() + d.status.slice(1));
       $card.find('.vpnpm-ping').text(d.ping !== null ? d.ping + ' ms' : 'N/A');
+      $card.find('p:contains("Label:")').html('Label: <span class="vpnpm-label ' + (d.label === 'premium' ? 'label-premium' : 'label-standard') + '">' + (d.label.charAt(0).toUpperCase() + d.label.slice(1)) + '</span>');
       sortServersByPing(); // Sort servers after update
       $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
     } else {

@@ -40,7 +40,26 @@ function vpnpm_admin_page() {
 		<div class="vpn-container">
 			<div class="vpn-grid" id="vpnpm-grid">
 			<?php if (!empty($profiles)) : ?>
-				<?php foreach ($profiles as $server): 
+				<?php 
+// Sort profiles by ping value and status before rendering
+usort($profiles, function($a, $b) {
+    $statusOrder = ['active' => 1, 'unknown' => 2, 'down' => 3];
+
+    $statusA = strtolower($a->status ?? 'unknown');
+    $statusB = strtolower($b->status ?? 'unknown');
+
+    // Sort by status first
+    if ($statusOrder[$statusA] !== $statusOrder[$statusB]) {
+        return $statusOrder[$statusA] - $statusOrder[$statusB];
+    }
+
+    // Then sort by ping value (lowest to highest)
+    $pingA = $a->ping !== null ? (int)$a->ping : PHP_INT_MAX;
+    $pingB = $b->ping !== null ? (int)$b->ping : PHP_INT_MAX;
+
+    return $pingA - $pingB;
+});
+				foreach ($profiles as $server): 
 					$name = esc_html(pathinfo($server->file_name, PATHINFO_FILENAME));
 					$host = esc_html($server->remote_host);
 					$port = (int)($server->port ?: 1194);
@@ -61,6 +80,9 @@ if ($last_checked) {
 } else {
     $last_checked_human = esc_html__('N/A', 'vpnserver');
 }
+
+$label = strtolower($server->label ?? 'standard'); // Default to 'standard'
+$label_class = $label === 'premium' ? 'label-premium' : 'label-standard';
 				?>
 				<div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
 					<h3><?php echo $name; ?></h3>
@@ -70,6 +92,7 @@ if ($last_checked) {
 					<p>Status:
 						<span class="vpnpm-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span>
 					</p>
+					<p>Label: <span class="vpnpm-label <?php echo esc_attr($label_class); ?>"><?php echo ucfirst($label); ?></span></p>
 					<p>Last checked: <span class="vpnpm-last-checked" title="<?php echo esc_attr($server->last_checked); ?>">
 						<?php echo esc_html($last_checked_human); ?>
 					</span></p>
