@@ -130,3 +130,13 @@
     color: white;
     transition: background-color 0.5s ease;
 }
+
+.vpnpm-type.type-premium {
+    color: green;
+    font-weight: bold;
+}
+
+.vpnpm-type.type-standard {
+    color: yellow;
+    font-weight: bold;
+}

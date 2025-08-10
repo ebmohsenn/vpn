@@ -81,8 +81,8 @@ if ($last_checked) {
     $last_checked_human = esc_html__('N/A', 'vpnserver');
 }
 
-$label = strtolower($server->label ?? 'standard'); // Default to 'standard'
-$label_class = $label === 'premium' ? 'label-premium' : 'label-standard';
+$type = strtolower($server->type ?? 'standard'); // Default to 'standard'
+$type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 				?>
 				<div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
 					<h3><?php echo $name; ?></h3>
@@ -92,7 +92,7 @@ $label_class = $label === 'premium' ? 'label-premium' : 'label-standard';
 					<p>Status:
 						<span class="vpnpm-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span>
 					</p>
-					<p>Label: <span class="vpnpm-label <?php echo esc_attr($label_class); ?>"><?php echo ucfirst($label); ?></span></p>
+					<p>Type: <span class="vpnpm-type <?php echo esc_attr($type_class); ?>"><?php echo ucfirst($type); ?></span></p>
 					<p>Last checked: <span class="vpnpm-last-checked" title="<?php echo esc_attr($server->last_checked); ?>">
 						<?php echo esc_html($last_checked_human); ?>
 					</span></p>
