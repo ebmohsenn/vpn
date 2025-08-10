@@ -168,5 +168,39 @@
         alert('Update failed.');
       });
     });
+
+    // Live refresh server statuses every 30 seconds
+setInterval(function() {
+    $.ajax({
+        url: vpnpmAjax.ajaxurl,
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce },
+    }).done(function(resp) {
+        if (resp && resp.success) {
+            resp.servers.forEach(function(server) {
+                const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
+                if (!$card.length) return;
+
+                // Update status
+                const $status = $card.find('.vpnpm-status');
+                $status.text(server.status.charAt(0).toUpperCase() + server.status.slice(1));
+                $status.removeClass('status-active status-offline status-unknown')
+                       .addClass('status-' + server.status);
+
+                // Update ping and highlight changes
+                const $ping = $card.find('.vpnpm-ping');
+                const oldPing = parseInt($ping.text(), 10);
+                if (server.ping !== null && oldPing !== server.ping) {
+                    $ping.text(server.ping).addClass('ping-changed');
+                    setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
+                }
+
+                // Update last checked
+                $card.find('.vpnpm-last-checked').text('Last checked: ' + server.last_checked);
+            });
+        }
+    });
+}, 30000); // 30 seconds
   });
 })(jQuery);

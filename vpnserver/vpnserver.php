@@ -138,3 +138,67 @@ function vpnpm_render_dashboard_widget() {
 
     echo '</tbody></table>';
 }
+
+// Add custom cron interval for 15 minutes
+add_filter('cron_schedules', 'vpnpm_add_cron_interval');
+function vpnpm_add_cron_interval($schedules) {
+    $schedules['fifteen_minutes'] = [
+        'interval' => 900, // 15 minutes in seconds
+        'display'  => __('Every 15 Minutes', 'vpnserver')
+    ];
+    return $schedules;
+}
+
+// Schedule the cron event on plugin activation
+register_activation_hook(__FILE__, 'vpnpm_schedule_cron');
+function vpnpm_schedule_cron() {
+    if (!wp_next_scheduled('vpnpm_test_all_servers_cron')) {
+        wp_schedule_event(time(), 'fifteen_minutes', 'vpnpm_test_all_servers_cron');
+    }
+}
+
+// Clear the cron event on plugin deactivation
+register_deactivation_hook(__FILE__, 'vpnpm_clear_cron');
+function vpnpm_clear_cron() {
+    $timestamp = wp_next_scheduled('vpnpm_test_all_servers_cron');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'vpnpm_test_all_servers_cron');
+    }
+}
+
+// Hook the cron event to the function
+add_action('vpnpm_test_all_servers_cron', 'vpnpm_test_all_servers');
+function vpnpm_test_all_servers() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'vpn_profiles';
+    $servers = $wpdb->get_results("SELECT id, remote_host, port FROM {$table}");
+
+    foreach ($servers as $server) {
+        $ping = vpnpm_get_server_ping($server->remote_host, $server->port);
+        $status = $ping !== false ? 'active' : 'down';
+
+        $wpdb->update(
+            $table,
+            [
+                'status'       => $status,
+                'last_checked' => current_time('mysql'),
+                'ping'         => $ping !== false ? $ping : null,
+            ],
+            ['id' => $server->id],
+            ['%s', '%s', '%d'],
+            ['%d']
+        );
+    }
+}
+
+// Helper function to get server ping
+define('VPNPM_PING_TIMEOUT', 3); // Timeout in seconds
+function vpnpm_get_server_ping($host, $port) {
+    $start = microtime(true);
+    $fp = @fsockopen($host, $port, $errno, $errstr, VPNPM_PING_TIMEOUT);
+    if (!$fp) {
+        return false;
+    }
+    fclose($fp);
+    return round((microtime(true) - $start) * 1000); // Return ping in milliseconds
+}

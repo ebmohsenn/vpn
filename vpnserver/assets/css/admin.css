@@ -123,3 +123,10 @@
 .badge-red { background: #c62828; }
 .badge-gray { background: #616161; }
 .badge-blue { background: #1565c0; }
+
+/* Ping change highlight */
+.ping-changed {
+    background-color: #4CAF50;
+    color: white;
+    transition: background-color 0.5s ease;
+}

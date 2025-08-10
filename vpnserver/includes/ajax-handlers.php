@@ -250,4 +250,29 @@ function vpnpm_ajax_bulk_upload_profiles() {
 }
 endif;
 
+// AJAX: Get all server statuses
+if (!function_exists('vpnpm_ajax_get_all_status')):
+add_action('wp_ajax_vpnpm_get_all_status', 'vpnpm_ajax_get_all_status');
+function vpnpm_ajax_get_all_status() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
+    }
+
+    global $wpdb;
+    $table = $wpdb->prefix . 'vpn_profiles';
+    $servers = $wpdb->get_results("SELECT id, status, ping, last_checked FROM {$table}");
+
+    $data = array_map(function($server) {
+        return [
+            'id'           => (int) $server->id,
+            'status'       => esc_html($server->status),
+            'ping'         => $server->ping !== null ? (int) $server->ping : null,
+            'last_checked' => esc_html($server->last_checked),
+        ];
+    }, $servers);
+
+    wp_send_json_success(['servers' => $data]);
+}
+endif;
+
 // End of ajax-handlers
