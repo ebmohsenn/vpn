@@ -11,10 +11,10 @@
 
     // Open/Close modal
     $(document).on('click', '#vpnpm-add-server-btn', function() {
-      $('#vpnpm-modal').attr('aria-hidden', 'false');
+      $('#vpnpm-modal').attr('aria-hidden', 'false').removeAttr('hidden');
     });
     $(document).on('click', '#vpnpm-modal-close, #vpnpm-modal-close-btn, #vpnpm-cancel', function() {
-      $('#vpnpm-modal').attr('aria-hidden', 'true');
+      $('#vpnpm-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
     });
 
     // Test single server
@@ -89,8 +89,8 @@
 
     // Open edit modal and load data
     function openEditModal(id) {
-      const $modal = $('#vpnpm-edit-modal');
-      $modal.attr('aria-hidden', 'false');
+  const $modal = $('#vpnpm-edit-modal');
+  $modal.attr('aria-hidden', 'false').removeAttr('hidden');
       $('#vpnpm-edit-form')[0].reset();
       $('#vpnpm-edit-id').val(id);
       $.ajax({
@@ -122,7 +122,7 @@
 
     // Close edit modal
     $(document).on('click', '.vpnpm-modal-close[data-close="edit"], #vpnpm-edit-modal .vpnpm-modal-backdrop[data-close="edit"]', function() {
-      $('#vpnpm-edit-modal').attr('aria-hidden', 'true');
+      $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
     });
 
     // Save edit form
@@ -160,7 +160,7 @@
           const name = $card.find('h3').text();
           const hay = (name + ' ' + (d.remote_host||'') + ' ' + (d.port||'') + ' ' + ((d.protocol||'').toUpperCase()) + ' ' + (s) + ' ' + (d.notes || '')).toLowerCase();
           $card.attr('data-search', hay);
-          $('#vpnpm-edit-modal').attr('aria-hidden', 'true');
+          $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
         } else {
           alert((resp && resp.data && resp.data.message) || 'Update failed.');
         }

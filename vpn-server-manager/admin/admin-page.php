@@ -79,7 +79,7 @@ function vpnpm_admin_page() {
         </div>
 
         <!-- Add Server Modal -->
-        <div class="vpnpm-modal" id="vpnpm-modal" aria-hidden="true">
+    <div class="vpnpm-modal" id="vpnpm-modal" aria-hidden="true" hidden>
             <div class="vpnpm-modal-backdrop" id="vpnpm-modal-close"></div>
             <div class="vpnpm-modal-content" role="dialog" aria-modal="true" aria-labelledby="vpnpm-modal-title">
                 <div class="vpnpm-modal-header">
@@ -106,7 +106,7 @@ function vpnpm_admin_page() {
         </div>
 
         <!-- Edit Server Modal -->
-        <div class="vpnpm-modal" id="vpnpm-edit-modal" aria-hidden="true">
+    <div class="vpnpm-modal" id="vpnpm-edit-modal" aria-hidden="true" hidden>
             <div class="vpnpm-modal-backdrop" data-close="edit"></div>
             <div class="vpnpm-modal-content" role="dialog" aria-modal="true" aria-labelledby="vpnpm-edit-title">
                 <div class="vpnpm-modal-header">
