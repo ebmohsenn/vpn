@@ -178,6 +178,7 @@
           $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
           $card.find('p:contains("Label:")').html('Label: <span class="vpnpm-label ' + (d.label === 'premium' ? 'label-premium' : 'label-standard') + '">' + ((d.label && d.label.charAt(0).toUpperCase() + d.label.slice(1)) || 'N/A') + '</span>');
           $card.find('p:contains("Type:")').html('Type: <span class="vpnpm-type ' + (d.type === 'premium' ? 'type-premium' : 'type-standard') + '">' + ((d.type && d.type.charAt(0).toUpperCase() + d.type.slice(1)) || 'N/A') + '</span>');
+          $card.find('.vpnpm-ping').text(d.ping !== null && d.ping !== undefined ? d.ping + ' ms' : 'N/A');
           $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
         } else {
           alert((resp && resp.data && resp.data.message) || 'Update failed.');
@@ -271,7 +272,7 @@ $(document).on('submit', '#vpnpm-edit-form', function(e) {
       const d = resp.data;
       $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
       $card.find('.vpnpm-status').text(d.status.charAt(0).toUpperCase() + d.status.slice(1));
-      $card.find('.vpnpm-ping').text(d.ping !== null ? d.ping + ' ms' : 'N/A');
+      $card.find('.vpnpm-ping').text(d.ping !== null && d.ping !== undefined ? d.ping + ' ms' : 'N/A');
       $card.find('p:contains("Label:")').html('Label: <span class="vpnpm-label ' + (d.label === 'premium' ? 'label-premium' : 'label-standard') + '">' + ((d.label && d.label.charAt(0).toUpperCase() + d.label.slice(1)) || 'N/A') + '</span>');
       $card.find('p:contains("Type:")').html('Type: <span class="vpnpm-type ' + (d.type === 'premium' ? 'type-premium' : 'type-standard') + '">' + ((d.type && d.type.charAt(0).toUpperCase() + d.type.slice(1)) || 'N/A') + '</span>');
       sortServersByPing(); // Sort servers after update
