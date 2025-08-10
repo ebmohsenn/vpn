@@ -171,6 +171,8 @@
           const name = $card.find('h3').text();
           const hay = (name + ' ' + (d.remote_host||'') + ' ' + (d.port||'') + ' ' + ((d.protocol||'').toUpperCase()) + ' ' + (s) + ' ' + (d.notes || '')).toLowerCase();
           $card.attr('data-search', hay);
+          // Ensure notes are updated in the card after saving changes
+          $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
           $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
         } else {
           alert((resp && resp.data && resp.data.message) || 'Update failed.');
