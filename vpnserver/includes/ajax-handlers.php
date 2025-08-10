@@ -132,6 +132,10 @@ function vpnpm_ajax_get_profile() {
 	if (!$id) wp_send_json_error(['message' => __('Invalid ID', 'vpnserver')], 400);
 	$p = vpnpm_get_profile_by_id($id);
 	if (!$p) wp_send_json_error(['message' => __('Not found', 'vpnserver')], 404);
+
+	// Ensure notes are properly fetched
+	$notes = property_exists($p, 'notes') && $p->notes !== null ? $p->notes : '';
+
 	wp_send_json_success([
 		'id' => (int)$p->id,
 		'file_name' => $p->file_name,
@@ -140,7 +144,7 @@ function vpnpm_ajax_get_profile() {
 		'protocol' => $p->protocol,
 		'cipher' => $p->cipher,
 		'status' => $p->status,
-		'notes' => $p->notes,
+		'notes' => $notes,
 		'last_checked' => $p->last_checked,
 	]);
 }
@@ -179,6 +183,10 @@ function vpnpm_ajax_update_profile() {
 		wp_send_json_error(['message' => __('No changes or update failed.', 'vpnserver')]);
 	}
 	$p = vpnpm_get_profile_by_id($id);
+
+	// Ensure updated notes are returned
+	$notes = property_exists($p, 'notes') && $p->notes !== null ? $p->notes : '';
+
 	wp_send_json_success([
 		'id' => (int)$p->id,
 		'remote_host' => $p->remote_host,
@@ -186,7 +194,7 @@ function vpnpm_ajax_update_profile() {
 		'protocol' => $p->protocol,
 		'cipher' => $p->cipher,
 		'status' => $p->status,
-		'notes' => $p->notes,
+		'notes' => $notes,
 		'last_checked' => $p->last_checked,
 	]);
 }
