@@ -200,12 +200,9 @@ setInterval(function() {
                        .addClass('status-' + server.status);
 
                 // Update ping and highlight changes
-                const $ping = $card.find('.vpnpm-ping');
-                const oldPing = parseInt($ping.text(), 10);
-                if (server.ping !== null && oldPing !== server.ping) {
-                    $ping.text(server.ping).addClass('ping-changed');
-                    setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
-                }
+                let $ping = $card.find('.vpnpm-ping'); // Use 'let' to avoid redeclaration issues
+                const newPing = server.ping !== null ? server.ping + ' ms' : 'N/A';
+                $ping.text(newPing);
 
                 // Update last checked
                 const lastCheckedDate = new Date(server.last_checked);
@@ -213,10 +210,6 @@ setInterval(function() {
                 $card.find('.vpnpm-last-checked')
                     .text('Last checked: ' + relative)
                     .attr('title', lastCheckedDate.toLocaleString());
-
-                const $ping = $card.find('.vpnpm-ping');
-                const newPing = server.ping !== null ? server.ping + ' ms' : 'N/A';
-                $ping.text(newPing);
             });
         }
     });
