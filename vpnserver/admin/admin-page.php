@@ -203,9 +203,14 @@ $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 
         cancelEditButtons.forEach(button => {
             button.addEventListener('click', function () {
-                editModal.setAttribute('aria-hidden', 'true');
+                editModal.setAttribute('inert', ''); // Use inert to prevent interaction
                 editModal.hidden = true;
             });
+        });
+
+        // Ensure modal is focusable when opened
+        document.getElementById('vpnpm-edit-form').addEventListener('submit', function () {
+            editModal.removeAttribute('inert');
         });
     });
 </script>
