@@ -38,19 +38,8 @@ function vpnpm_admin_page() {
 		</div>
 
 		<div class="vpn-container">
-			<!-- <div class="vpn-grid" id="vpnpm-grid"> -->
-			<table class="vpn-table">
-    <thead>
-        <tr>
-            <th>Server Name</th>
-            <th>Status</th>
-            <th>Last Checked</th>
-            <th>Ping (ms)</th>
-            <th>Type</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if (!empty($profiles)) : ?>
+			<div class="vpn-grid" id="vpnpm-grid">
+			<?php if (!empty($profiles)) : ?>
 				<?php 
 // Sort profiles by ping value and status before rendering
 usort($profiles, function($a, $b) {
@@ -95,26 +84,32 @@ if ($last_checked) {
 $type = strtolower($server->type ?? 'standard'); // Default to 'standard'
 $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 				?>
-				<tr data-search="<?php echo esc_attr($search_haystack); ?>">
-                    <td><?php echo $name; ?></td>
-                    <td class="vpnpm-status <?php echo esc_attr($status_class); ?>">
-                        <?php echo esc_html(ucfirst($server->status ?? 'unknown')); ?>
-                    </td>
-                    <td><?php echo esc_html($last_checked_human); ?></td>
-                    <td><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></td>
-                    <td class="vpnpm-type <?php echo esc_attr($type_class); ?>">
-                        <?php echo ucfirst($server->type ?? 'standard'); ?>
-                    </td>
-                </tr>
+				<div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
+					<h3><?php echo $name; ?></h3>
+					<p>Host: <?php echo $host; ?></p>
+					<p>Port: <?php echo $port; ?></p>
+					<p>Protocol: <?php echo $proto; ?></p>
+					<p>Status:
+						<span class="vpnpm-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span>
+					</p>
+					<p>Type: <span class="vpnpm-type <?php echo esc_attr($type_class); ?>"><?php echo ucfirst($type); ?></span></p>
+					<p>Last checked: <span class="vpnpm-last-checked" title="<?php echo esc_attr($server->last_checked); ?>">
+						<?php echo esc_html($last_checked_human); ?>
+					</span></p>
+					<p>Ping: <span class="vpnpm-ping"><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
+					<p>Notes: <?php echo $notes; ?></p>
+					<div>
+						<button class="vpn-btn vpn-btn-secondary vpnpm-test-btn" data-id="<?php echo (int)$server->id; ?>">Test</button>
+						<a class="vpn-btn vpn-btn-primary" href="<?php echo esc_url($download_url); ?>">Download Config</a>
+						<button class="vpn-btn vpnpm-edit-btn" data-id="<?php echo (int)$server->id; ?>">Edit</button>
+						<button class="vpn-btn vpn-btn-danger vpnpm-delete-btn" data-id="<?php echo (int)$server->id; ?>">Delete</button>
+					</div>
+				</div>
 				<?php endforeach; ?>
 			<?php else: ?>
-				<tr>
-                    <td colspan="5"><?php esc_html_e('No VPN profiles found. Add one to get started.', 'vpnserver'); ?></td>
-                </tr>
+				<p>No VPN profiles found. Add one to get started.</p>
 			<?php endif; ?>
-    </tbody>
-</table>
-			<!-- </div> -->
+			</div>
 		</div>
 
 		<!-- Add Server Modal -->
