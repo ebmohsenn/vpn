@@ -22,18 +22,18 @@ require_once VPNSERVER_PLUGIN_DIR . 'includes/ajax-handlers.php';
 require_once VPNSERVER_PLUGIN_DIR . 'admin/admin-page.php';
 
 // Activation
-register_activation_hook(__FILE__, 'vpnpm_activate_plugin');
-function vpnpm_activate_plugin() {
+register_activation_hook(__FILE__, 'vpnserver_activate_plugin');
+function vpnserver_activate_plugin() {
     vpnpm_create_tables();
     flush_rewrite_rules();
 }
 
 // Admin menu
-add_action('admin_menu', 'vpnpm_add_admin_menu');
-function vpnpm_add_admin_menu() {
+add_action('admin_menu', 'vpnserver_add_admin_menu');
+function vpnserver_add_admin_menu() {
     add_menu_page(
-        __('VPN Manager', 'vpnpm'),
-        __('VPN Manager', 'vpnpm'),
+        __('VPN Manager', 'vpnserver'),
+        __('VPN Manager', 'vpnserver'),
         'manage_options',
         'vpn-manager',
         'vpnpm_admin_page',
@@ -85,4 +85,3 @@ function vpnserver_admin_assets($hook) {
         ],
     ]);
 }
-
