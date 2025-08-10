@@ -84,19 +84,15 @@ function vpnpm_admin_page() {
 			<div class="vpnpm-modal-backdrop" id="vpnpm-modal-close"></div>
 			<div class="vpnpm-modal-content" role="dialog" aria-modal="true" aria-labelledby="vpnpm-modal-title">
 				<div class="vpnpm-modal-header">
-					<h2 id="vpnpm-modal-title">Add Server</h2>
+					<h2 id="vpnpm-modal-title">Add Servers</h2>
 					<button type="button" class="vpnpm-modal-close" id="vpnpm-modal-close-btn">&times;</button>
 				</div>
 				<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data" class="vpnpm-upload-form">
-					<input type="hidden" name="action" value="vpnpm_add_server" />
+					<input type="hidden" name="action" value="vpnpm_add_servers" />
 					<?php wp_nonce_field('vpnpm-upload'); ?>
 					<div class="vpnpm-form-row">
-						<label for="ovpn_file">OpenVPN Profile (.ovpn)</label>
-						<input type="file" id="ovpn_file" name="ovpn_file" accept=".ovpn" required />
-					</div>
-					<div class="vpnpm-form-row">
-						<label for="notes"><?php esc_html_e('Notes (optional)', 'vpnserver'); ?></label>
-						<textarea id="notes" name="notes" rows="3" placeholder="<?php esc_attr_e('Add optional notes...', 'vpnserver'); ?>"></textarea>
+						<label for="ovpn_files">OpenVPN Profiles (.ovpn)</label>
+						<input type="file" id="ovpn_files" name="ovpn_files[]" accept=".ovpn" multiple required />
 					</div>
 					<div class="vpnpm-modal-actions">
 						<button type="button" class="button vpnpm-btn-secondary" id="vpnpm-cancel"><?php esc_html_e('Cancel', 'vpnserver'); ?></button>
@@ -158,6 +154,21 @@ function vpnpm_admin_page() {
 			</div>
 		</div>
 	</div>
+
+	<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Close Edit Modal on Cancel Button Click
+        const editModal = document.getElementById('vpnpm-edit-modal');
+        const cancelEditButtons = document.querySelectorAll('[data-close="edit"]');
+
+        cancelEditButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                editModal.setAttribute('aria-hidden', 'true');
+                editModal.hidden = true;
+            });
+        });
+    });
+</script>
 	<?php
 }
 endif;

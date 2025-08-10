@@ -180,4 +180,74 @@ function vpnpm_ajax_update_profile() {
 }
 endif;
 
+// AJAX: Bulk upload profiles
+if (!function_exists('vpnpm_ajax_bulk_upload_profiles')):
+add_action('wp_ajax_vpnpm_bulk_upload_profiles', 'vpnpm_ajax_bulk_upload_profiles');
+function vpnpm_ajax_bulk_upload_profiles() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
+    }
+    check_ajax_referer('vpnpm-upload');
+
+    if (empty($_FILES['ovpn_files']['name'])) {
+        wp_send_json_error(['message' => __('No files uploaded.', 'vpnserver')], 400);
+    }
+
+    $uploaded_files = $_FILES['ovpn_files'];
+    $results = [];
+
+    foreach ($uploaded_files['name'] as $index => $file_name) {
+        $tmp_name = $uploaded_files['tmp_name'][$index];
+        $error = $uploaded_files['error'][$index];
+
+        if ($error !== UPLOAD_ERR_OK) {
+            $results[] = [
+                'file_name' => $file_name,
+                'status' => 'error',
+                'message' => __('File upload error.', 'vpnserver')
+            ];
+            continue;
+        }
+
+        $file_content = file_get_contents($tmp_name);
+        if (!$file_content) {
+            $results[] = [
+                'file_name' => $file_name,
+                'status' => 'error',
+                'message' => __('Failed to read file content.', 'vpnserver')
+            ];
+            continue;
+        }
+
+        $parsed_data = vpnpm_parse_ovpn_file($file_content);
+        if (!$parsed_data) {
+            $results[] = [
+                'file_name' => $file_name,
+                'status' => 'error',
+                'message' => __('Invalid .ovpn file format.', 'vpnserver')
+            ];
+            continue;
+        }
+
+        $inserted = vpnpm_insert_profile($parsed_data);
+        if (!$inserted) {
+            $results[] = [
+                'file_name' => $file_name,
+                'status' => 'error',
+                'message' => __('Failed to save profile to database.', 'vpnserver')
+            ];
+            continue;
+        }
+
+        $results[] = [
+            'file_name' => $file_name,
+            'status' => 'success',
+            'message' => __('Profile uploaded successfully.', 'vpnserver')
+        ];
+    }
+
+    wp_send_json_success(['results' => $results]);
+}
+endif;
+
 // End of ajax-handlers
