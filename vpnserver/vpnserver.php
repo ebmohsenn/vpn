@@ -143,12 +143,12 @@ function vpnpm_render_dashboard_widget() {
     echo '</tbody></table>';
 }
 
-// Add custom cron interval for 15 minutes
+// Add custom cron interval for 10 minutes
 add_filter('cron_schedules', 'vpnpm_add_cron_interval');
 function vpnpm_add_cron_interval($schedules) {
     $schedules['fifteen_minutes'] = [
-        'interval' => 900, // 15 minutes in seconds
-        'display'  => __('Every 15 Minutes', 'vpnserver')
+        'interval' => 600, // 10 minutes in seconds
+        'display'  => __('Every 10 Minutes', 'vpnserver')
     ];
     return $schedules;
 }

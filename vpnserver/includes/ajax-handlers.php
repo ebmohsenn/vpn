@@ -287,14 +287,14 @@ function vpnpm_ajax_get_all_status() {
 }
 endif;
 
-// Schedule ping test every 15 minutes
+// Schedule ping test every 10 minutes
 if ( ! wp_next_scheduled( 'vpnpm_cron_ping_servers' ) ) {
-    wp_schedule_event( time(), 'fifteen_minutes', 'vpnpm_cron_ping_servers' );
+    wp_schedule_event( time(), 'ten_minutes', 'vpnpm_cron_ping_servers' );
 }
 add_filter( 'cron_schedules', function( $schedules ) {
-    $schedules['fifteen_minutes'] = [
-        'interval' => 900,
-        'display'  => __( 'Every 15 Minutes' ),
+    $schedules['ten_minutes'] = [
+        'interval' => 600,
+        'display'  => __( 'Every 10 Minutes' ),
     ];
     return $schedules;
 });
