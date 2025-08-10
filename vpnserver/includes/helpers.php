@@ -115,4 +115,71 @@ function vpnpm_handle_upload() {
 	wp_redirect(add_query_arg('vpnpm_msg', 'added', admin_url('admin.php?page=vpn-manager')));
 	exit;
 }
+
+// Admin upload handler (Add Servers - Bulk Upload)
+add_action('admin_post_vpnpm_add_servers', 'vpnpm_handle_bulk_upload');
+function vpnpm_handle_bulk_upload() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('Unauthorized', 'vpnserver'));
+    }
+    check_admin_referer('vpnpm-upload');
+
+    if (empty($_FILES['ovpn_files']['name'])) {
+        wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpn-manager')));
+        exit;
+    }
+
+    $uploaded_files = $_FILES['ovpn_files'];
+    $errors = [];
+    $success_count = 0;
+
+    foreach ($uploaded_files['name'] as $index => $file_name) {
+        $tmp_name = $uploaded_files['tmp_name'][$index];
+        $error = $uploaded_files['error'][$index];
+
+        if ($error !== UPLOAD_ERR_OK) {
+            $errors[] = sprintf(__('File upload error: %s', 'vpnserver'), $file_name);
+            continue;
+        }
+
+        $parse = vpnpm_parse_ovpn_file($tmp_name);
+        if (is_wp_error($parse)) {
+            $errors[] = sprintf(__('Failed to parse file: %s', 'vpnserver'), $file_name);
+            continue;
+        }
+
+        $data = [
+            'file_name'   => sanitize_file_name($file_name),
+            'remote_host' => $parse['remote_host'],
+            'port'        => (int)$parse['port'],
+            'protocol'    => $parse['protocol'],
+            'cipher'      => $parse['cipher'],
+            'status'      => 'unknown',
+            'notes'       => $parse['notes'],
+            'last_checked'=> null,
+            'created_at'  => current_time('mysql'),
+        ];
+
+        $id = vpnpm_insert_profile($data);
+        if (!$id) {
+            $errors[] = sprintf(__('Database error for file: %s', 'vpnserver'), $file_name);
+            continue;
+        }
+
+        if (!vpnpm_store_config_file($id, $tmp_name)) {
+            vpnpm_delete_profile($id);
+            $errors[] = sprintf(__('Failed to store file: %s', 'vpnserver'), $file_name);
+            continue;
+        }
+
+        $success_count++;
+    }
+
+    if ($success_count > 0) {
+        wp_redirect(add_query_arg('vpnpm_msg', 'added', admin_url('admin.php?page=vpn-manager')));
+    } else {
+        wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpn-manager')));
+    }
+    exit;
+}
 // End of helpers
