@@ -157,7 +157,7 @@ function vpnpm_add_cron_interval($schedules) {
 register_activation_hook(__FILE__, 'vpnpm_schedule_cron');
 function vpnpm_schedule_cron() {
     if (!wp_next_scheduled('vpnpm_test_all_servers_cron')) {
-        wp_schedule_event(time(), 'fifteen_minutes', 'vpnpm_test_all_servers_cron');
+        wp_schedule_event(time(), 'ten_minutes', 'vpnpm_test_all_servers_cron');
     }
 }
 
