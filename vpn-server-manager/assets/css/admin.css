@@ -24,12 +24,25 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+/* 3-column responsive grid */
+.vpn-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+}
+
+@media (max-width: 1100px) {
+    .vpn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+    .vpn-grid { grid-template-columns: 1fr; }
+}
+
 /* Server cards */
 .vpn-card {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 15px;
-    margin-bottom: 15px;
     display: flex;
     flex-direction: column;
     background: #fafafa;
@@ -83,3 +96,30 @@
     border-radius: 6px;
     border: 1px solid #ccc;
 }
+
+/* Modal styles */
+.vpnpm-modal[aria-hidden="true"] { display: none; }
+.vpnpm-modal {
+    position: fixed; inset: 0; z-index: 1000;
+}
+.vpnpm-modal-backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+}
+.vpnpm-modal-content {
+    position: relative; background: #fff; width: min(700px, 92%);
+    margin: 5vh auto; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    padding: 20px;
+}
+.vpnpm-modal-header { display: flex; justify-content: space-between; align-items: center; }
+.vpnpm-modal-close { background: transparent; border: none; font-size: 28px; line-height: 1; cursor: pointer; }
+.vpnpm-form-row { margin-bottom: 12px; display: flex; flex-direction: column; }
+.vpnpm-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.vpnpm-form-wide { grid-column: 1 / -1; }
+.vpnpm-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+
+/* Badges for status */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; color: #fff; }
+.badge-green { background: #2e7d32; }
+.badge-red { background: #c62828; }
+.badge-gray { background: #616161; }
+.badge-blue { background: #1565c0; }

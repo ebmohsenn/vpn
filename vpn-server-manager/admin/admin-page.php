@@ -31,12 +31,13 @@ function vpnpm_admin_page() {
         <div class="vpn-header">
             <h1>VPN Manager</h1>
             <div>
-                <input type="text" class="vpn-search" id="vpnpm-search" placeholder="Search servers...">
                 <button class="vpn-btn vpn-btn-primary" id="vpnpm-add-server-btn">+ Add Server</button>
+                <input type="text" class="vpn-search" id="vpnpm-search" placeholder="Search servers..." aria-label="Search servers" />
             </div>
         </div>
 
-        <div class="vpn-container" id="vpnpm-grid">
+        <div class="vpn-container">
+            <div class="vpn-grid" id="vpnpm-grid">
             <?php if (!empty($profiles)) : ?>
                 <?php foreach ($profiles as $server): 
                     $name = esc_html(pathinfo($server->file_name, PATHINFO_FILENAME));
@@ -52,7 +53,7 @@ function vpnpm_admin_page() {
                     );
                     $search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto . ' ' . $status_text . ' ' . ($server->notes ?: ''));
                 ?>
-                <div class="vpn-card" data-search="<?php echo esc_attr($search_haystack); ?>">
+                <div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
                     <h3><?php echo $name; ?></h3>
                     <p>Host: <?php echo $host; ?></p>
                     <p>Port: <?php echo $port; ?></p>
@@ -66,6 +67,7 @@ function vpnpm_admin_page() {
                     <div>
                         <button class="vpn-btn vpn-btn-secondary vpnpm-test-btn" data-id="<?php echo (int)$server->id; ?>">Test</button>
                         <a class="vpn-btn vpn-btn-primary" href="<?php echo esc_url($download_url); ?>">Download Config</a>
+                        <button class="vpn-btn vpnpm-edit-btn" data-id="<?php echo (int)$server->id; ?>">Edit</button>
                         <button class="vpn-btn vpn-btn-danger vpnpm-delete-btn" data-id="<?php echo (int)$server->id; ?>">Delete</button>
                     </div>
                 </div>
@@ -73,6 +75,7 @@ function vpnpm_admin_page() {
             <?php else: ?>
                 <p>No VPN profiles found. Add one to get started.</p>
             <?php endif; ?>
+            </div>
         </div>
 
         <!-- Add Server Modal -->
@@ -97,6 +100,58 @@ function vpnpm_admin_page() {
                     <div class="vpnpm-modal-actions">
                         <button type="button" class="button vpnpm-btn-secondary" id="vpnpm-cancel"><?php esc_html_e('Cancel', 'vpnpm'); ?></button>
                         <button type="submit" class="button button-primary vpnpm-btn-primary"><?php esc_html_e('Upload', 'vpnpm'); ?></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Server Modal -->
+        <div class="vpnpm-modal" id="vpnpm-edit-modal" aria-hidden="true">
+            <div class="vpnpm-modal-backdrop" data-close="edit"></div>
+            <div class="vpnpm-modal-content" role="dialog" aria-modal="true" aria-labelledby="vpnpm-edit-title">
+                <div class="vpnpm-modal-header">
+                    <h2 id="vpnpm-edit-title">Edit Server</h2>
+                    <button type="button" class="vpnpm-modal-close" data-close="edit">&times;</button>
+                </div>
+                <form id="vpnpm-edit-form">
+                    <input type="hidden" name="id" id="vpnpm-edit-id" />
+                    <div class="vpnpm-form-grid">
+                        <div class="vpnpm-form-row">
+                            <label for="vpnpm-edit-remote">Remote Host</label>
+                            <input type="text" id="vpnpm-edit-remote" name="remote_host" required />
+                        </div>
+                        <div class="vpnpm-form-row">
+                            <label for="vpnpm-edit-port">Port</label>
+                            <input type="number" id="vpnpm-edit-port" name="port" min="1" max="65535" />
+                        </div>
+                        <div class="vpnpm-form-row">
+                            <label for="vpnpm-edit-protocol">Protocol</label>
+                            <select id="vpnpm-edit-protocol" name="protocol">
+                                <option value="">Auto</option>
+                                <option value="tcp">TCP</option>
+                                <option value="udp">UDP</option>
+                            </select>
+                        </div>
+                        <div class="vpnpm-form-row">
+                            <label for="vpnpm-edit-cipher">Cipher</label>
+                            <input type="text" id="vpnpm-edit-cipher" name="cipher" />
+                        </div>
+                        <div class="vpnpm-form-row">
+                            <label for="vpnpm-edit-status">Status</label>
+                            <select id="vpnpm-edit-status" name="status">
+                                <option value="unknown">Unknown</option>
+                                <option value="active">Active</option>
+                                <option value="down">Down</option>
+                            </select>
+                        </div>
+                        <div class="vpnpm-form-row vpnpm-form-wide">
+                            <label for="vpnpm-edit-notes">Notes</label>
+                            <textarea id="vpnpm-edit-notes" name="notes" rows="4"></textarea>
+                        </div>
+                    </div>
+                    <div class="vpnpm-modal-actions">
+                        <button type="button" class="button vpnpm-btn-secondary" data-close="edit"><?php esc_html_e('Cancel', 'vpnpm'); ?></button>
+                        <button type="submit" class="button button-primary vpnpm-btn-primary"><?php esc_html_e('Save Changes', 'vpnpm'); ?></button>
                     </div>
                 </form>
             </div>

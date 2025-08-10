@@ -62,7 +62,3 @@ function vpnpm_admin_assets($hook) {
     ]);
 }
 
-// Enqueue CSS as requested (kept separate handle)
-add_action('admin_enqueue_scripts', function() {
-    wp_enqueue_style('vpn-admin-css', plugin_dir_url(__FILE__) . 'assets/css/admin.css');
-});

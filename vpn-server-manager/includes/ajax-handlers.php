@@ -101,3 +101,71 @@ function vpnpm_ajax_delete_profile() {
 
     wp_send_json_success(['id' => $id]);
 }
+
+// AJAX: Get profile (for edit modal)
+add_action('wp_ajax_vpnpm_get_profile', 'vpnpm_ajax_get_profile');
+function vpnpm_ajax_get_profile() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => __('Unauthorized', 'vpnpm')], 403);
+    }
+    check_ajax_referer('vpnpm-nonce');
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if (!$id) wp_send_json_error(['message' => __('Invalid ID', 'vpnpm')], 400);
+    $p = vpnpm_get_profile_by_id($id);
+    if (!$p) wp_send_json_error(['message' => __('Not found', 'vpnpm')], 404);
+    wp_send_json_success([
+        'id' => (int)$p->id,
+        'file_name' => $p->file_name,
+        'remote_host' => $p->remote_host,
+        'port' => (int)$p->port,
+        'protocol' => $p->protocol,
+        'cipher' => $p->cipher,
+        'status' => $p->status,
+        'notes' => $p->notes,
+        'last_checked' => $p->last_checked,
+    ]);
+}
+
+// AJAX: Update profile (edit modal save)
+add_action('wp_ajax_vpnpm_update_profile', 'vpnpm_ajax_update_profile');
+function vpnpm_ajax_update_profile() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => __('Unauthorized', 'vpnpm')], 403);
+    }
+    check_ajax_referer('vpnpm-nonce');
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if (!$id) wp_send_json_error(['message' => __('Invalid ID', 'vpnpm')], 400);
+
+    $data = [
+        'remote_host' => isset($_POST['remote_host']) ? sanitize_text_field(wp_unslash($_POST['remote_host'])) : null,
+        'port'        => isset($_POST['port']) ? (int)$_POST['port'] : null,
+        'protocol'    => isset($_POST['protocol']) ? sanitize_text_field(wp_unslash($_POST['protocol'])) : null,
+        'cipher'      => isset($_POST['cipher']) ? sanitize_text_field(wp_unslash($_POST['cipher'])) : null,
+        'status'      => isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : null,
+        'notes'       => isset($_POST['notes']) ? sanitize_textarea_field(wp_unslash($_POST['notes'])) : null,
+    ];
+    // remove nulls
+    $data = array_filter($data, function($v){ return $v !== null; });
+    if (isset($data['protocol']) && !in_array(strtolower($data['protocol']), ['tcp','udp'], true)) {
+        unset($data['protocol']);
+    }
+    if (isset($data['status']) && !in_array(strtolower($data['status']), ['active','down','unknown'], true)) {
+        $data['status'] = 'unknown';
+    }
+
+    $ok = vpnpm_update_profile($id, $data);
+    if ($ok === false) {
+        wp_send_json_error(['message' => __('No changes or update failed.', 'vpnpm')]);
+    }
+    $p = vpnpm_get_profile_by_id($id);
+    wp_send_json_success([
+        'id' => (int)$p->id,
+        'remote_host' => $p->remote_host,
+        'port' => (int)$p->port,
+        'protocol' => $p->protocol,
+        'cipher' => $p->cipher,
+        'status' => $p->status,
+        'notes' => $p->notes,
+        'last_checked' => $p->last_checked,
+    ]);
+}

@@ -101,3 +101,26 @@ function vpnpm_delete_profile($id) {
     $table = vpnpm_table_name();
     return $wpdb->delete($table, ['id' => (int)$id], ['%d']);
 }
+
+function vpnpm_update_profile($id, $data) {
+    global $wpdb;
+    $table = vpnpm_table_name();
+
+    $allowed = ['file_name','remote_host','port','protocol','cipher','status','notes'];
+    $update_data = [];
+    $formats = [];
+    foreach ($allowed as $key) {
+        if (array_key_exists($key, $data)) {
+            $update_data[$key] = $data[$key];
+            // crude format mapping
+            if (in_array($key, ['port'])) {
+                $formats[] = '%d';
+            } else {
+                $formats[] = '%s';
+            }
+        }
+    }
+    if (empty($update_data)) return false;
+
+    return $wpdb->update($table, $update_data, ['id' => (int)$id], $formats, ['%d']);
+}
