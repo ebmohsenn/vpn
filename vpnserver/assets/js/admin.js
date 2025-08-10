@@ -233,3 +233,66 @@ function timeAgo(date) {
   if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
   return Math.floor(seconds / 86400) + ' days ago';
 }
+// Store last_checked timestamps for each server by ID
+const lastCheckedTimes = {};
+
+// Update relative times every 30 seconds
+function updateRelativeTimes() {
+  Object.entries(lastCheckedTimes).forEach(([id, lastChecked]) => {
+    const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + id + '"]').closest('.vpnpm-card');
+    if ($card.length) {
+      const $lastChecked = $card.find('.vpnpm-last-checked');
+      if ($lastChecked.length) {
+        const relative = timeAgo(new Date(lastChecked));
+        $lastChecked.text('Last checked: ' + relative);
+        $lastChecked.attr('title', new Date(lastChecked).toLocaleString());
+      }
+    }
+  });
+}
+
+// Update lastCheckedTimes and UI during AJAX refresh
+setInterval(function() {
+  $.ajax({
+    url: vpnpmAjax.ajaxurl,
+    type: 'POST',
+    dataType: 'json',
+    data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce },
+  }).done(function(resp) {
+    if (resp && resp.success) {
+      resp.servers.forEach(function(server) {
+        lastCheckedTimes[server.id] = server.last_checked;
+
+        const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
+        if (!$card.length) return;
+
+        // Update status
+        const $status = $card.find('.vpnpm-status');
+        $status.text(server.status.charAt(0).toUpperCase() + server.status.slice(1));
+        $status.removeClass('status-active status-offline status-unknown')
+               .addClass('status-' + server.status);
+
+        // Update ping and highlight changes
+        const $ping = $card.find('.vpnpm-ping');
+        const oldPing = parseInt($ping.text(), 10);
+        if (server.ping !== null && oldPing !== server.ping) {
+          $ping.text(server.ping + ' ms').addClass('ping-changed');
+          setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
+        }
+
+        // Update relative last checked text immediately
+        const $lastChecked = $card.find('.vpnpm-last-checked');
+        if ($lastChecked.length) {
+          const relative = timeAgo(new Date(server.last_checked));
+          $lastChecked.text('Last checked: ' + relative);
+          $lastChecked.attr('title', new Date(server.last_checked).toLocaleString());
+        }
+      });
+    }
+  });
+}, 30000);
+
+// Also run relative time updater every 30 seconds to keep time updated without reload
+setInterval(updateRelativeTimes, 30000);
+
+// Your existing timeAgo function here...
