@@ -31,4 +31,3 @@ if (is_dir($dir)) {
 
 // Optionally, clean any options/transients if they were used in future
 // delete_option('vpnserver_some_option');
-...existing code from uninstall.php...

@@ -181,4 +181,3 @@ function vpnpm_ajax_update_profile() {
 endif;
 
 // End of ajax-handlers
-...existing code from ajax-handlers.php...
