@@ -217,8 +217,8 @@ setInterval(function() {
     });
 }, 30000); // 30 seconds
 
-// Sort servers by status: active on top, down below
-function sortServers() {
+// Sort servers by ping value: lowest to highest, then down servers
+function sortServersByPing() {
   const $grid = $('#vpnpm-grid');
   const $cards = $grid.children('.vpnpm-card');
 
@@ -226,17 +226,20 @@ function sortServers() {
     const statusA = $(a).find('.vpnpm-status').text().toLowerCase();
     const statusB = $(b).find('.vpnpm-status').text().toLowerCase();
 
-    if (statusA === 'active' && statusB !== 'active') return -1;
-    if (statusA !== 'active' && statusB === 'active') return 1;
+    // Place down servers at the bottom
     if (statusA === 'down' && statusB !== 'down') return 1;
     if (statusA !== 'down' && statusB === 'down') return -1;
-    return 0;
+
+    // Sort by ping value for active/unknown servers
+    const pingA = parseInt($(a).find('.vpnpm-ping').text()) || Infinity;
+    const pingB = parseInt($(b).find('.vpnpm-ping').text()) || Infinity;
+    return pingA - pingB;
   });
 
   $grid.append($cards); // Re-append sorted cards to the grid
 }
 
-// Call sortServers after AJAX updates
+// Call sortServersByPing after AJAX updates
 $(document).on('submit', '#vpnpm-edit-form', function(e) {
   e.preventDefault();
   const id = $('#vpnpm-edit-id').val();
@@ -262,7 +265,8 @@ $(document).on('submit', '#vpnpm-edit-form', function(e) {
       const d = resp.data;
       $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
       $card.find('.vpnpm-status').text(d.status.charAt(0).toUpperCase() + d.status.slice(1));
-      sortServers(); // Sort servers after update
+      $card.find('.vpnpm-ping').text(d.ping !== null ? d.ping + ' ms' : 'N/A');
+      sortServersByPing(); // Sort servers after update
       $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
     } else {
       alert((resp && resp.data && resp.data.message) || 'Update failed.');
@@ -272,9 +276,9 @@ $(document).on('submit', '#vpnpm-edit-form', function(e) {
   });
 });
 
-// Call sortServers on page load
+// Call sortServersByPing on page load
 $(document).ready(function() {
-  sortServers();
+  sortServersByPing();
 });
   });
 })(jQuery);
