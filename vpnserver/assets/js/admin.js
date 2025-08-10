@@ -40,6 +40,17 @@
         let $last = $card.find('.vpnpm-last-checked');
         if (!$last.length) $last = $('<small class="vpnpm-last-checked" />').appendTo($status.parent());
         if (last) $last.text('Last checked: ' + last);
+
+        // Update ping display
+        const $ping = $card.find('.vpnpm-ping');
+        const newPing = resp && resp.success ? resp.data.ping : null;
+        if (newPing !== null) {
+          const oldPing = parseInt($ping.text(), 10);
+          if (oldPing !== newPing) {
+            $ping.text(newPing + ' ms').addClass('ping-changed');
+            setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
+          }
+        }
       }).fail(function() {
         $status.removeClass('badge-green').addClass('badge badge-red').text('Down');
       });
