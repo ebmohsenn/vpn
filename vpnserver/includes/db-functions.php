@@ -1,11 +1,14 @@
 <?php
 defined('ABSPATH') || exit;
 
+if (!function_exists('vpnpm_table_name')):
 function vpnpm_table_name() {
 	global $wpdb;
 	return $wpdb->prefix . 'vpn_profiles';
 }
+endif;
 
+if (!function_exists('vpnpm_create_tables')):
 function vpnpm_create_tables() {
 	global $wpdb;
 	$table = vpnpm_table_name();
@@ -29,7 +32,9 @@ function vpnpm_create_tables() {
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 	dbDelta($sql);
 }
+endif;
 
+if (!function_exists('vpnpm_insert_profile')):
 function vpnpm_insert_profile($data) {
 	global $wpdb;
 	$table = vpnpm_table_name();
@@ -68,19 +73,25 @@ function vpnpm_insert_profile($data) {
 	}
 	return false;
 }
+endif;
 
+if (!function_exists('vpnpm_get_all_profiles')):
 function vpnpm_get_all_profiles() {
 	global $wpdb;
 	$table = vpnpm_table_name();
 	return $wpdb->get_results("SELECT * FROM {$table} ORDER BY created_at DESC");
 }
+endif;
 
+if (!function_exists('vpnpm_get_profile_by_id')):
 function vpnpm_get_profile_by_id($id) {
 	global $wpdb;
 	$table = vpnpm_table_name();
 	return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $id));
 }
+endif;
 
+if (!function_exists('vpnpm_update_status')):
 function vpnpm_update_status($id, $status) {
 	global $wpdb;
 	$table = vpnpm_table_name();
@@ -95,13 +106,17 @@ function vpnpm_update_status($id, $status) {
 		['%d']
 	);
 }
+endif;
 
+if (!function_exists('vpnpm_delete_profile')):
 function vpnpm_delete_profile($id) {
 	global $wpdb;
 	$table = vpnpm_table_name();
 	return $wpdb->delete($table, ['id' => (int)$id], ['%d']);
 }
+endif;
 
+if (!function_exists('vpnpm_update_profile')):
 function vpnpm_update_profile($id, $data) {
 	global $wpdb;
 	$table = vpnpm_table_name();
@@ -123,4 +138,5 @@ function vpnpm_update_profile($id, $data) {
 
 	return $wpdb->update($table, $update_data, ['id' => (int)$id], $formats, ['%d']);
 }
+endif;
 

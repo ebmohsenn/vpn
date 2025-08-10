@@ -2,6 +2,7 @@
 defined('ABSPATH') || exit;
 
 // AJAX: Test server
+if (!function_exists('vpnpm_ajax_test_server')):
 add_action('wp_ajax_vpnpm_test_server', 'vpnpm_ajax_test_server');
 function vpnpm_ajax_test_server() {
 	if (!current_user_can('manage_options')) {
@@ -43,8 +44,10 @@ function vpnpm_ajax_test_server() {
 		'error'        => $err,
 	]);
 }
+endif;
 
 // AJAX: Download config
+if (!function_exists('vpnpm_ajax_download_config')):
 add_action('wp_ajax_vpnpm_download_config', 'vpnpm_ajax_download_config');
 function vpnpm_ajax_download_config() {
 	if (!current_user_can('manage_options')) {
@@ -76,8 +79,10 @@ function vpnpm_ajax_download_config() {
 	readfile($path);
 	exit;
 }
+endif;
 
 // AJAX: Delete profile
+if (!function_exists('vpnpm_ajax_delete_profile')):
 add_action('wp_ajax_vpnpm_delete_profile', 'vpnpm_ajax_delete_profile');
 function vpnpm_ajax_delete_profile() {
 	if (!current_user_can('manage_options')) {
@@ -101,8 +106,10 @@ function vpnpm_ajax_delete_profile() {
 
 	wp_send_json_success(['id' => $id]);
 }
+endif;
 
 // AJAX: Get profile (for edit modal)
+if (!function_exists('vpnpm_ajax_get_profile')):
 add_action('wp_ajax_vpnpm_get_profile', 'vpnpm_ajax_get_profile');
 function vpnpm_ajax_get_profile() {
 	if (!current_user_can('manage_options')) {
@@ -125,8 +132,10 @@ function vpnpm_ajax_get_profile() {
 		'last_checked' => $p->last_checked,
 	]);
 }
+endif;
 
 // AJAX: Update profile (edit modal save)
+if (!function_exists('vpnpm_ajax_update_profile')):
 add_action('wp_ajax_vpnpm_update_profile', 'vpnpm_ajax_update_profile');
 function vpnpm_ajax_update_profile() {
 	if (!current_user_can('manage_options')) {
@@ -169,6 +178,7 @@ function vpnpm_ajax_update_profile() {
 		'last_checked' => $p->last_checked,
 	]);
 }
+endif;
 
 // End of ajax-handlers
 ...existing code from ajax-handlers.php...

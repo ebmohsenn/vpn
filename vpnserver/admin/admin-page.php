@@ -1,6 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
+if (!function_exists('vpnpm_admin_page')):
 function vpnpm_admin_page() {
 	if (!current_user_can('manage_options')) {
 		return;
@@ -159,5 +160,6 @@ function vpnpm_admin_page() {
 	</div>
 	<?php
 }
+endif;
 
 // End of admin page

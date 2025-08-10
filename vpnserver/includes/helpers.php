@@ -1,6 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
+if (!function_exists('vpnpm_get_upload_dir')):
 function vpnpm_get_upload_dir() {
 	$upload = wp_upload_dir();
 	$dir = trailingslashit($upload['basedir']) . 'vpn-profile-manager/';
@@ -9,29 +10,39 @@ function vpnpm_get_upload_dir() {
 	}
 	return $dir;
 }
+endif;
 
+if (!function_exists('vpnpm_get_upload_url')):
 function vpnpm_get_upload_url() {
 	$upload = wp_upload_dir();
 	return trailingslashit($upload['baseurl']) . 'vpn-profile-manager/';
 }
+endif;
 
+if (!function_exists('vpnpm_config_file_path')):
 function vpnpm_config_file_path($id) {
 	$dir = vpnpm_get_upload_dir();
 	return $dir . $id . '.ovpn';
 }
+endif;
 
+if (!function_exists('vpnpm_store_config_file')):
 function vpnpm_store_config_file($id, $tmp_path) {
 	$dest = vpnpm_config_file_path($id);
 	return @move_uploaded_file($tmp_path, $dest);
 }
+endif;
 
+if (!function_exists('vpnpm_delete_config_file')):
 function vpnpm_delete_config_file($id) {
 	$path = vpnpm_config_file_path($id);
 	if (file_exists($path)) {
 		@unlink($path);
 	}
 }
+endif;
 
+if (!function_exists('vpnpm_status_class')):
 function vpnpm_status_class($status) {
 	$status = strtolower((string)$status);
 	if ($status === 'active' || $status === 'up') return 'badge badge-green';
@@ -39,10 +50,13 @@ function vpnpm_status_class($status) {
 	if ($status === 'unknown') return 'badge badge-gray';
 	return 'badge badge-blue';
 }
+endif;
 
+if (!function_exists('vpnpm_sanitize_text')):
 function vpnpm_sanitize_text($text) {
 	return sanitize_textarea_field($text);
 }
+endif;
 
 // Admin upload handler (Add Server)
 add_action('admin_post_vpnpm_add_server', 'vpnpm_handle_upload');
