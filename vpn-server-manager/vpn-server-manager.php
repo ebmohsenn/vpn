@@ -49,8 +49,32 @@ function vpnpm_admin_assets($hook) {
     if (strpos((string)$hook, 'vpn-manager') === false) {
         return;
     }
-    wp_enqueue_style('vpnpm-admin', VPNPM_PLUGIN_URL . 'assets/css/admin.css', [], VPNPM_VERSION);
-    wp_enqueue_script('vpnpm-admin', VPNPM_PLUGIN_URL . 'assets/js/admin.js', ['jquery'], VPNPM_VERSION, true);
+    $css_rel = 'assets/css/admin.css';
+    $js_rel  = 'assets/js/admin.js';
+    $css_path = VPNPM_PLUGIN_DIR . $css_rel;
+    $js_path  = VPNPM_PLUGIN_DIR . $js_rel;
+
+    // If assets are missing on the server, show an admin notice and skip enqueue to avoid 404s
+    if (!file_exists($css_path) || !file_exists($js_path)) {
+        add_action('admin_notices', function() use ($css_path, $js_path) {
+            $missing = [];
+            if (!file_exists($css_path)) $missing[] = $css_path;
+            if (!file_exists($js_path))  $missing[] = $js_path;
+            echo '<div class="notice notice-error"><p>'
+                . esc_html__('VPN Manager assets are missing on the server:', 'vpnpm')
+                . ' ' . esc_html(implode(', ', $missing)) . '</p></div>';
+        });
+        return;
+    }
+
+    // Build URLs robustly and cache-bust with file modification time
+    $css_url = plugins_url($css_rel, __FILE__);
+    $js_url  = plugins_url($js_rel, __FILE__);
+    $css_ver = @filemtime($css_path) ?: VPNPM_VERSION;
+    $js_ver  = @filemtime($js_path) ?: VPNPM_VERSION;
+
+    wp_enqueue_style('vpnpm-admin', $css_url, [], $css_ver);
+    wp_enqueue_script('vpnpm-admin', $js_url, ['jquery'], $js_ver, true);
     wp_localize_script('vpnpm-admin', 'vpnpmAjax', [
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce'   => wp_create_nonce('vpnpm-nonce'),
