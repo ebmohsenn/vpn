@@ -41,6 +41,7 @@ function vpnpm_ajax_test_server() {
 		'status'       => $status,
 		'last_checked' => $profile ? $profile->last_checked : current_time('mysql'),
 		'latency_ms'   => (int)round((microtime(true) - $start) * 1000),
+		'ping'         => $profile ? $profile->ping : null,
 		'error'        => $err,
 	]);
 }
