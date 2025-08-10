@@ -53,6 +53,7 @@ function vpnpm_admin_page() {
 						'vpnpm-nonce'
 					);
 					$search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto . ' ' . $status_text . ' ' . ($server->notes ?: ''));
+					$notes = isset($server->notes) ? esc_html($server->notes) : esc_html__('No notes available', 'vpnserver');
 				?>
 				<div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
 					<h3><?php echo $name; ?></h3>
@@ -66,6 +67,7 @@ function vpnpm_admin_page() {
 						<?php endif; ?>
 					</p>
 					<p>Ping: <span class="vpnpm-ping"><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
+					<p>Notes: <?php echo $notes; ?></p>
 					<div>
 						<button class="vpn-btn vpn-btn-secondary vpnpm-test-btn" data-id="<?php echo (int)$server->id; ?>">Test</button>
 						<a class="vpn-btn vpn-btn-primary" href="<?php echo esc_url($download_url); ?>">Download Config</a>
