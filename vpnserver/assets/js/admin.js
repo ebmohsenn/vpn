@@ -14,7 +14,7 @@
       $('#vpnpm-modal').attr('aria-hidden', 'false').removeAttr('hidden');
     });
     $(document).on('click', '#vpnpm-modal-close, #vpnpm-modal-close-btn, #vpnpm-cancel', function() {
-      $('#vpnpm-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
+        $('#vpnpm-modal').attr('inert', '').attr('hidden', 'hidden');
     });
 
     // Test single server
@@ -188,7 +188,7 @@ setInterval(function() {
         dataType: 'json',
         data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce },
     }).done(function(resp) {
-        if (resp && resp.success) {
+        if (resp && resp.success && Array.isArray(resp.servers)) {
             resp.servers.forEach(function(server) {
                 const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
                 if (!$card.length) return;
@@ -200,7 +200,7 @@ setInterval(function() {
                        .addClass('status-' + server.status);
 
                 // Update ping and highlight changes
-                let $ping = $card.find('.vpnpm-ping'); // Use 'let' to avoid redeclaration issues
+                const $ping = $card.find('.vpnpm-ping'); // Use 'let' to avoid redeclaration issues
                 const newPing = server.ping !== null ? server.ping + ' ms' : 'N/A';
                 $ping.text(newPing);
 
