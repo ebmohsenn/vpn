@@ -53,7 +53,7 @@ function vpnpm_admin_page() {
 						'vpnpm-nonce'
 					);
 					$search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto . ' ' . $status_text . ' ' . ($server->notes ?: ''));
-					$notes = isset($server->notes) ? esc_html($server->notes) : esc_html__('No notes available', 'vpnserver');
+					$notes = property_exists($server, 'notes') && $server->notes !== null ? esc_html($server->notes) : esc_html__('No notes available', 'vpnserver');
 				?>
 				<div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
 					<h3><?php echo $name; ?></h3>
