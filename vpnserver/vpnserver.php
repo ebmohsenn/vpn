@@ -75,13 +75,17 @@ function vpnserver_admin_assets($hook) {
 
     wp_enqueue_style('vpnserver-admin', $css_url, [], $css_ver);
     wp_enqueue_script('vpnserver-admin', $js_url, ['jquery'], $js_ver, true);
-    wp_localize_script('vpnserver-admin', 'vpnserverAjax', [
+    // Keep legacy object name for compatibility with existing JS (vpnpmAjax)
+    $data = [
         'ajaxurl' => admin_url('admin-ajax.php'),
-        'nonce'   => wp_create_nonce('vpnserver-nonce'),
+        'nonce'   => wp_create_nonce('vpnpm-nonce'),
         'strings' => [
             'testing' => __('Testing...', 'vpnserver'),
             'tested'  => __('Tested', 'vpnserver'),
             'confirmDelete' => __('Delete this server? This cannot be undone.', 'vpnserver'),
         ],
-    ]);
+    ];
+    wp_localize_script('vpnserver-admin', 'vpnpmAjax', $data);
+    // Also provide new name in case future JS expects vpnserverAjax
+    wp_localize_script('vpnserver-admin', 'vpnserverAjax', $data);
 }
