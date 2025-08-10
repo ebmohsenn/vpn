@@ -21,4 +21,4 @@ jobs:
           protocol: ftps          # <-- switch here to ftps
           port: 21                # usually port 21 for explicit FTPS
           local-dir: ./vpn-server-manager/    # your local plugin folder
-          server-dir: /public_html/wp-content/plugins/vpn-server-manager
+          server-dir: /public_html/wp-content/plugins/vpn-server-manager/
