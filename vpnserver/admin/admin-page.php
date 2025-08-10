@@ -52,8 +52,8 @@ function vpnpm_admin_page() {
 						admin_url('admin-ajax.php?action=vpnpm_download_config&id=' . (int)$server->id),
 						'vpnpm-nonce'
 					);
-					$search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto . ' ' . $status_text . ' ' . ($server->notes ?: ''));
-					$notes = property_exists($server, 'notes') && $server->notes !== null ? esc_html($server->notes) : esc_html__('No notes available', 'vpnserver');
+$server_notes_safe = property_exists($server, 'notes') && $server->notes !== null ? $server->notes : '';
+$search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto . ' ' . $status_text . ' ' . $server_notes_safe);					$notes = property_exists($server, 'notes') && $server->notes !== null ? esc_html($server->notes) : esc_html__('No notes available', 'vpnserver');
 				?>
 				<div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
 					<h3><?php echo $name; ?></h3>
