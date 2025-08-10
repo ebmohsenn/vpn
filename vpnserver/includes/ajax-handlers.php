@@ -33,15 +33,26 @@ function vpnpm_ajax_test_server() {
 	} else {
 		$err = "$errno $errstr";
 	}
-	vpnpm_update_status($id, $status);
-
-	$profile = vpnpm_get_profile_by_id($id);
+	$ping_ms = (int)round((microtime(true) - $start) * 1000);
+	global $wpdb;
+	$table = $wpdb->prefix . 'vpn_profiles';
+	$wpdb->update(
+		$table,
+		[
+			'status'       => $status,
+			'ping'         => $ping_ms,
+			'last_checked' => current_time('mysql')
+		],
+		['id' => $id],
+		['%s', '%d', '%s'],
+		['%d']
+	);
 	wp_send_json_success([
 		'id'           => $id,
 		'status'       => $status,
-		'last_checked' => $profile ? $profile->last_checked : current_time('mysql'),
-		'latency_ms'   => (int)round((microtime(true) - $start) * 1000),
-		'ping'         => $profile ? $profile->ping : null,
+		'last_checked' => current_time('mysql'),
+		'latency_ms'   => $ping_ms,
+		'ping'         => $ping_ms,
 		'error'        => $err,
 	]);
 }
@@ -275,5 +286,55 @@ function vpnpm_ajax_get_all_status() {
     wp_send_json_success(['servers' => $data]);
 }
 endif;
+
+// Schedule ping test every 15 minutes
+if ( ! wp_next_scheduled( 'vpnpm_cron_ping_servers' ) ) {
+    wp_schedule_event( time(), 'fifteen_minutes', 'vpnpm_cron_ping_servers' );
+}
+add_filter( 'cron_schedules', function( $schedules ) {
+    $schedules['fifteen_minutes'] = [
+        'interval' => 900,
+        'display'  => __( 'Every 15 Minutes' ),
+    ];
+    return $schedules;
+});
+
+add_action( 'vpnpm_cron_ping_servers', function() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'vpn_profiles';
+    $servers = $wpdb->get_results( "SELECT id FROM {$table}" );
+    if ( $servers ) {
+        foreach ( $servers as $srv ) {
+            // Simulate AJAX ping update
+            $profile = vpnpm_get_profile_by_id( $srv->id );
+            if ( ! $profile ) continue;
+
+            $host = $profile->remote_host;
+            $port = (int)$profile->port ?: 1194;
+            $timeout = 3;
+
+            $status = 'down';
+            $start = microtime(true);
+            $fp = @fsockopen($host, $port, $errno, $errstr, $timeout);
+            if ($fp) {
+                $status = 'active';
+                fclose($fp);
+            }
+            $ping_ms = (int)round((microtime(true) - $start) * 1000);
+
+            $wpdb->update(
+                $table,
+                [
+                    'status'       => $status,
+                    'ping'         => $ping_ms,
+                    'last_checked' => current_time('mysql')
+                ],
+                ['id' => $srv->id],
+                ['%s', '%d', '%s'],
+                ['%d']
+            );
+        }
+    }
+});
 
 // End of ajax-handlers
