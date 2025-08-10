@@ -103,7 +103,7 @@ function vpnpm_add_dashboard_widget() {
 function vpnpm_render_dashboard_widget() {
     global $wpdb;
     $table = $wpdb->prefix . 'vpn_profiles';
-    $servers = $wpdb->get_results("SELECT file_name, status, last_checked FROM {$table} ORDER BY last_checked DESC");
+    $servers = $wpdb->get_results("SELECT file_name, status, last_checked, ping FROM {$table} ORDER BY last_checked DESC");
 
     if (empty($servers)) {
         echo '<p>' . esc_html__('No VPN servers found.', 'vpnserver') . '</p>';
@@ -115,6 +115,7 @@ function vpnpm_render_dashboard_widget() {
     echo '<th>' . esc_html__('Server Name', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Status', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Last Checked', 'vpnserver') . '</th>';
+    echo '<th>' . esc_html__('Ping (ms)', 'vpnserver') . '</th>';
     echo '</tr></thead><tbody>';
 
     foreach ($servers as $server) {
@@ -133,6 +134,7 @@ function vpnpm_render_dashboard_widget() {
         echo '<td>' . $name . '</td>';
         echo '<td><span class="badge ' . esc_attr($status_class) . '">' . ucfirst($status) . '</span></td>';
         echo '<td>' . $last_checked . '</td>';
+        echo '<td>' . ($server->ping !== null ? esc_html($server->ping) : esc_html__('N/A', 'vpnserver')) . '</td>';
         echo '</tr>';
     }
 

@@ -79,7 +79,7 @@ if (!function_exists('vpnpm_get_all_profiles')):
 function vpnpm_get_all_profiles() {
 	global $wpdb;
 	$table = vpnpm_table_name();
-	return $wpdb->get_results("SELECT * FROM {$table} ORDER BY created_at DESC");
+	return $wpdb->get_results("SELECT id, file_name, remote_host, port, protocol, status, ping, last_checked FROM {$table}");
 }
 endif;
 

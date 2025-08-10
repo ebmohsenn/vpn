@@ -12,7 +12,7 @@ function vpnpm_admin_page() {
 	?>
 	<div class="wrap">
 		<?php if ($msg): ?>
-			<div class="notice notice-<?php echo ($msg === 'added') ? 'success' : 'error'; ?> is-dismissible">
+			<div class="notice notice-<?php echo ($msg === 'success') ? 'success' : 'error'; ?> is-dismissible">
 				<p>
 					<?php
 					switch ($msg) {
@@ -65,6 +65,7 @@ function vpnpm_admin_page() {
 							<small class="vpnpm-last-checked"><?php echo esc_html(sprintf('Last checked: %s', $server->last_checked)); ?></small>
 						<?php endif; ?>
 					</p>
+					<p>Ping: <span class="vpnpm-ping"><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
 					<div>
 						<button class="vpn-btn vpn-btn-secondary vpnpm-test-btn" data-id="<?php echo (int)$server->id; ?>">Test</button>
 						<a class="vpn-btn vpn-btn-primary" href="<?php echo esc_url($download_url); ?>">Download Config</a>
