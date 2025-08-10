@@ -22,6 +22,7 @@ function vpnpm_create_tables() {
 		protocol varchar(20) DEFAULT NULL,
 		cipher varchar(100) DEFAULT NULL,
 		status varchar(20) DEFAULT 'unknown',
+		ping int(11) DEFAULT NULL,
 		notes text NULL,
 		last_checked datetime DEFAULT NULL,
 		created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
