@@ -89,3 +89,52 @@ function vpnserver_admin_assets($hook) {
     // Also provide new name in case future JS expects vpnserverAjax
     wp_localize_script('vpnserver-admin', 'vpnserverAjax', $data);
 }
+
+// Add Dashboard Widget for VPN Server Manager
+add_action('wp_dashboard_setup', 'vpnpm_add_dashboard_widget');
+function vpnpm_add_dashboard_widget() {
+    wp_add_dashboard_widget(
+        'vpnpm_dashboard_widget',
+        __('VPN Server Manager', 'vpnserver'),
+        'vpnpm_render_dashboard_widget'
+    );
+}
+
+function vpnpm_render_dashboard_widget() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'vpn_profiles';
+    $servers = $wpdb->get_results("SELECT file_name, status, last_checked FROM {$table} ORDER BY last_checked DESC");
+
+    if (empty($servers)) {
+        echo '<p>' . esc_html__('No VPN servers found.', 'vpnserver') . '</p>';
+        return;
+    }
+
+    echo '<table class="widefat fixed striped">';
+    echo '<thead><tr>';
+    echo '<th>' . esc_html__('Server Name', 'vpnserver') . '</th>';
+    echo '<th>' . esc_html__('Status', 'vpnserver') . '</th>';
+    echo '<th>' . esc_html__('Last Checked', 'vpnserver') . '</th>';
+    echo '</tr></thead><tbody>';
+
+    foreach ($servers as $server) {
+        $name = esc_html(pathinfo($server->file_name, PATHINFO_FILENAME));
+        $status = strtolower($server->status);
+        $last_checked = $server->last_checked ? esc_html($server->last_checked) : esc_html__('Never', 'vpnserver');
+
+        $status_class = 'badge-gray';
+        if ($status === 'active') {
+            $status_class = 'badge-green';
+        } elseif ($status === 'down') {
+            $status_class = 'badge-red';
+        }
+
+        echo '<tr>';
+        echo '<td>' . $name . '</td>';
+        echo '<td><span class="badge ' . esc_attr($status_class) . '">' . ucfirst($status) . '</span></td>';
+        echo '<td>' . $last_checked . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
+}
