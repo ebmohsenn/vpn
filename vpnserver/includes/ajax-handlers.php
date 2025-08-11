@@ -50,14 +50,10 @@ function vpnpm_ajax_list_checkhost_nodes() {
 	check_ajax_referer('vpnpm-nonce');
 	// Since Check-Host does not provide an open directory of nodes, offer a configurable sample list.
 	// Admins can paste their own hostnames in settings as needed. These are examples and may change.
-	$nodes = [
-		'ir1.node.check-host.net',
-		'ir2.node.check-host.net',
-		'ir-tehran.node.check-host.net',
-		'ir-mashhad.node.check-host.net',
-		'ae-dubai.node.check-host.net',
-		'tr-istanbul.node.check-host.net',
-	];
+	if (!function_exists('vpnpm_checkhost_curated_nodes')) {
+		wp_send_json_success(['nodes' => []]);
+	}
+	$nodes = vpnpm_checkhost_curated_nodes(); // [{host,label}]
 	wp_send_json_success(['nodes' => $nodes]);
 }
 endif;
@@ -103,8 +99,10 @@ function vpnpm_ajax_get_checkhost_details() {
 		$min = !empty($latencies) ? (int) round(min($latencies)) : null;
 		$max = !empty($latencies) ? (int) round(max($latencies)) : null;
 		$loss = $samples > 0 ? round((($samples - $succ) / $samples) * 100) : null;
+		$label = function_exists('vpnpm_checkhost_label_for_host') ? vpnpm_checkhost_label_for_host($nodeName) : $nodeName;
 		$nodes[] = [
 			'node' => (string)$nodeName,
+			'label'=> (string)$label,
 			'avg'  => $avg,
 			'min'  => $min,
 			'max'  => $max,

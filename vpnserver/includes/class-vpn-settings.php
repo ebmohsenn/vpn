@@ -294,7 +294,8 @@ class Vpnpm_Settings {
                 echo '<div id="vpnpm-checkhost-nodes-wrap">';
                 echo '<input type="text" class="regular-text" id="vpnpm-checkhost-nodes-input" name="' . esc_attr(self::OPTION) . '[checkhost_nodes]" value="' . esc_attr($val) . '" placeholder="ir1.node.check-host.net, ir2.node.check-host.net" />';
                 echo '<p class="description">' . esc_html__('Comma-separated Check-Host node hostnames. Or click Load Nodes to pick from a list.', 'vpnserver') . '</p>';
-                echo '<p><button type="button" class="button" id="vpnpm-load-checkhost-nodes">' . esc_html__('Load Nodes', 'vpnserver') . '</button></p>';
+                echo '<p><button type="button" class="button" id="vpnpm-load-checkhost-nodes">' . esc_html__('Load Nodes', 'vpnserver') . '</button> ';
+                echo '<label style="margin-left:8px"><input type="checkbox" id="vpnpm-merge-checkhost-nodes" checked> ' . esc_html__('Merge into current selection (uncheck to replace)', 'vpnserver') . '</label></p>';
                 echo '<div id="vpnpm-checkhost-node-list" style="max-height:200px; overflow:auto; border:1px solid #ccd0d4; padding:8px; display:none"></div>';
                 echo '</div>';
                 echo "<script>(function(){\n".
@@ -304,7 +305,15 @@ class Vpnpm_Settings {
                 "if(!btn||!list||!input){return;}\n".
                 "function syncInputFromChecks(){\n".
                 "  var checks=list.querySelectorAll('input[type=checkbox]:checked');\n".
-                "  input.value=Array.prototype.map.call(checks,function(c){return c.value;}).join(', ');\n".
+                "  var selected=Array.prototype.map.call(checks,function(c){return c.value;});\n".
+                "  var merge=document.getElementById('vpnpm-merge-checkhost-nodes');\n".
+                "  if (merge && merge.checked){\n".
+                "    var manual=input.value.split(',').map(function(s){return s.trim();}).filter(Boolean);\n".
+                "    var set={}; manual.concat(selected).forEach(function(h){ set[h]=true; });\n".
+                "    input.value=Object.keys(set).join(', ');\n".
+                "  } else {\n".
+                "    input.value=selected.join(', ');\n".
+                "  }\n".
                 "}\n".
                 "btn.addEventListener('click', function(){\n".
                 "  btn.disabled=true; btn.textContent='" . esc_js(__('Loading...', 'vpnserver')) . "';\n".
@@ -318,10 +327,12 @@ class Vpnpm_Settings {
                 "      if(!json||!json.success||!json.data||!Array.isArray(json.data.nodes)){ alert('Failed to load nodes'); return; }\n".
                 "      list.innerHTML='';\n".
                 "      var selected=input.value.split(',').map(function(s){return s.trim();}).filter(Boolean);\n".
-                "      json.data.nodes.forEach(function(n){\n".
+                "      json.data.nodes.forEach(function(row){\n".
+                "        var host = row && row.host ? row.host : '';\n".
+                "        var label = row && row.label ? row.label : host;\n".
                 "        var lbl=document.createElement('label'); lbl.style.display='block';\n".
-                "        var cb=document.createElement('input'); cb.type='checkbox'; cb.value=n; if(selected.indexOf(n)!==-1){ cb.checked=true; } cb.addEventListener('change', syncInputFromChecks);\n".
-                "        var span=document.createElement('span'); span.textContent=' '+n;\n".
+                "        var cb=document.createElement('input'); cb.type='checkbox'; cb.value=host; if(selected.indexOf(host)!==-1){ cb.checked=true; } cb.addEventListener('change', syncInputFromChecks);\n".
+                "        var span=document.createElement('span'); span.textContent=' '+label+' ('+host+')';\n".
                 "        lbl.appendChild(cb); lbl.appendChild(span); list.appendChild(lbl);\n".
                 "      });\n".
                 "      list.style.display='block';\n".

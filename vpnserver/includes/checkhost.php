@@ -3,6 +3,48 @@ defined('ABSPATH') || exit;
 
 // Simple Check-Host API client and processing utilities
 
+if (!function_exists('vpnpm_checkhost_curated_nodes')):
+function vpnpm_checkhost_curated_nodes() {
+    // Curated defaults: host => label
+    // Admin can still paste any hosts; these are just convenient presets
+    $nodes = [
+        'ir1.node.check-host.net'        => 'Tehran, Iran',
+        'ir2.node.check-host.net'        => 'Mashhad, Iran',
+        'ir-tehran.node.check-host.net'  => 'Tehran, Iran',
+        'ir-mashhad.node.check-host.net' => 'Mashhad, Iran',
+        'ae-dubai.node.check-host.net'   => 'Dubai, UAE',
+        'tr-istanbul.node.check-host.net'=> 'Istanbul, Turkey',
+        'ru-moscow.node.check-host.net'  => 'Moscow, Russia',
+        'de-berlin.node.check-host.net'  => 'Berlin, Germany',
+        'nl-amsterdam.node.check-host.net'=> 'Amsterdam, Netherlands',
+        'fr-paris.node.check-host.net'   => 'Paris, France',
+    ];
+    // Return as an array of arrays {host,label}
+    $out = [];
+    foreach ($nodes as $host => $label) {
+        $out[] = ['host' => $host, 'label' => $label];
+    }
+    return $out;
+}
+endif;
+
+if (!function_exists('vpnpm_checkhost_label_for_host')):
+function vpnpm_checkhost_label_for_host($host) {
+    $host = (string) $host;
+    $curated = vpnpm_checkhost_curated_nodes();
+    foreach ($curated as $row) {
+        if (isset($row['host']) && strcasecmp($row['host'], $host) === 0) {
+            return (string) $row['label'];
+        }
+    }
+    // Fallback: derive a label from host
+    if (strpos($host, 'ir') === 0) return 'Iran node';
+    if (strpos($host, 'ae-') === 0) return 'UAE node';
+    if (strpos($host, 'tr-') === 0) return 'Turkey node';
+    return $host;
+}
+endif;
+
 if (!function_exists('vpnpm_checkhost_initiate_ping')):
 function vpnpm_checkhost_initiate_ping($target, array $nodes = []) {
     $endpoint = 'https://check-host.net/check-ping';

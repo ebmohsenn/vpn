@@ -142,7 +142,8 @@
               const loss = n.loss != null ? n.loss + '%' : 'N/A';
               const statusClass = (n.avg != null && n.avg <= 120) ? 'badge-green' : (n.avg != null && n.avg <= 250) ? 'badge-blue' : 'badge-red';
               const $row = $('<div class="vpnpm-node-row" style="display:flex; gap:10px; align-items:center; padding:4px 0;" />');
-              $row.append('<span class="badge '+statusClass+'" title="packet loss: '+loss+'">'+(n.node || '')+'</span>');
+              const friendly = n.label || n.node || '';
+              $row.append('<span class="badge '+statusClass+'" title="packet loss: '+loss+'">'+friendly+'</span>');
               $row.append('<span>avg: '+avg+'</span>');
               $row.append('<span>min: '+min+'</span>');
               $row.append('<span>max: '+max+'</span>');
