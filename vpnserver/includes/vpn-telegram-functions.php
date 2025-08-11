@@ -1,26 +1,4 @@
-if (!function_exists('vpnpm_format_vpn_status_message_stylish')):
-/**
- * Format a stylish MarkdownV2 message for Telegram with server info.
- * @param array $servers Array of arrays with keys: name, status, ping, type
- * @return string
- */
-function vpnpm_format_vpn_status_message_stylish($servers) {
-	$lines = [];
-	foreach ($servers as $srv) {
-		$name = isset($srv['name']) ? $srv['name'] : '';
-		$status = isset($srv['status']) ? ucfirst(strtolower($srv['status'])) : 'Unknown';
-		$ping = isset($srv['ping']) && $srv['ping'] !== null ? $srv['ping'] . ' ms' : 'N/A';
-		$type = isset($srv['type']) ? ucfirst(strtolower($srv['type'])) : 'Standard';
-		// Escape for MarkdownV2
-		$name = preg_replace('/([_\*\[\]\(\)~`>#+\-=|{}.!])/', '\\$1', $name);
-		$status = preg_replace('/([_\*\[\]\(\)~`>#+\-=|{}.!])/', '\\$1', $status);
-		$type = preg_replace('/([_\*\[\]\(\)~`>#+\-=|{}.!])/', '\\$1', $type);
-		$lines[] = "*{$name}*  |  `{$status}`  |  {$ping}  |  _{$type}_";
-	}
-	$title = '*VPN Status*  \\(' . date_i18n('Y-m-d H:i') . ')';
-	return $title . "\n" . ($lines ? implode("\n", $lines) : '_No servers found._');
-}
-endif;
+// ...existing code...
 <?php
 /**
  * Telegram notification helpers for VPN Server Manager.
