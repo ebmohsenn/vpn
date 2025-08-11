@@ -228,6 +228,37 @@ class Vpnpm_Settings {
         );
     }
 
+    public static function field_telegram_chat_ids() {
+        $opts = self::get_settings();
+        $val = isset($opts['telegram_chat_ids']) ? (string)$opts['telegram_chat_ids'] : '';
+        echo '<input type="text" name="' . esc_attr(self::OPTION) . '[telegram_chat_ids]" value="' . esc_attr($val) . '" class="regular-text" placeholder="123456789, -1001234567890" />';
+        echo '<p class="description">' . esc_html__('Comma-separated chat IDs. Use negative IDs for supergroups (e.g., -100...).', 'vpnserver') . '</p>';
+    }
+
+    public static function field_enable_cron() {
+        $opts = self::get_settings();
+        $checked = !empty($opts['enable_cron']);
+        echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION) . '[enable_cron]" value="1" ' . checked($checked, true, false) . '> ' . esc_html__('Enable periodic ping checks via WP-Cron', 'vpnserver') . '</label>';
+    }
+
+    public static function field_enable_telegram() {
+        $opts = self::get_settings();
+        $checked = !empty($opts['enable_telegram']);
+        echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION) . '[enable_telegram]" value="1" ' . checked($checked, true, false) . '> ' . esc_html__('Send Telegram notifications after updates', 'vpnserver') . '</label>';
+    }
+
+    public static function field_cron_interval() {
+        $opts = self::get_settings();
+        $val = isset($opts['cron_interval']) ? (string)$opts['cron_interval'] : '10';
+        echo '<select name="' . esc_attr(self::OPTION) . '[cron_interval]">';
+        $choices = [ '5' => __('Every 5 minutes','vpnserver'), '10' => __('Every 10 minutes','vpnserver'), '15' => __('Every 15 minutes','vpnserver') ];
+        foreach ($choices as $k => $label) {
+            printf('<option value="%s" %s>%s</option>', esc_attr($k), selected($val, $k, false), esc_html($label));
+        }
+        echo '</select>';
+        echo '<p class="description">' . esc_html__('How often to run automatic tests.', 'vpnserver') . '</p>';
+    }
+
     public static function field_checkhost_nodes() {
         echo '<p class="description">' . esc_html__('Deprecated: Node selection has moved. Go to Settings ▸ VPN Server Manager Settings to choose from the official list. Manual entry is no longer supported.', 'vpnserver') . '</p>';
         echo '<input type="text" class="regular-text" disabled value="" placeholder="Use the new settings page" />';
