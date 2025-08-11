@@ -114,6 +114,11 @@
     function openMorePing(id) {
       const $modal = $('#vpnpm-moreping-modal');
       $modal.removeAttr('inert').attr('aria-hidden','false').removeAttr('hidden');
+      // Focus the close button for immediate keyboard access
+      setTimeout(function(){
+        var $close = $modal.find('.vpnpm-modal-close[data-close="moreping"]').first();
+        if ($close.length) { $close.trigger('focus'); }
+      }, 0);
       $('#vpnpm-moreping-loading').show();
       $('#vpnpm-moreping-error').hide().text('');
       $('#vpnpm-moreping-content').hide();
@@ -161,8 +166,19 @@
     $(document).on('click', '[data-role="vpnpm-more-ping"]', function(){
       openMorePing($(this).data('id'));
     });
+
+    function closeMorePingModal() {
+      const $modal = $('#vpnpm-moreping-modal');
+      // Move focus outside before hiding to avoid aria-hidden on focused element
+      const $fallbackFocus = $('#vpnpm-add-server-btn');
+      if ($fallbackFocus.length) { $fallbackFocus.trigger('focus'); }
+      else { $('body').attr('tabindex','-1').trigger('focus'); }
+      // Now safely hide modal
+      $modal.attr('aria-hidden','true').attr('hidden','hidden').attr('inert','');
+    }
+
     $(document).on('click', '.vpnpm-modal-close[data-close="moreping"], #vpnpm-moreping-modal .vpnpm-modal-backdrop[data-close="moreping"]', function(){
-      $('#vpnpm-moreping-modal').attr('aria-hidden','true').attr('hidden','hidden').attr('inert','');
+      closeMorePingModal();
     });
 
     // Test all servers sequentially
