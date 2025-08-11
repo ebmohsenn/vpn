@@ -100,7 +100,7 @@
           }
         }
         const $ch = $card.find('.vpnpm-ping-ch');
-        const newChPing = resp && resp.success ? resp.data.ch_ping : null;
+        const newChPing = (resp && resp.success && resp.data && typeof resp.data.ch_ping === 'number') ? resp.data.ch_ping : null;
         if (newChPing !== null) {
           const oldChPing = parseInt($ch.text(), 10);
           if (oldChPing !== newChPing) {
@@ -121,8 +121,8 @@
           if (resp && resp.success) {
             const $ch = $card.find('.vpnpm-ping-ch');
             if ($ch.length) {
-              const val = resp.data.ch_ping;
-              if (val !== null && val !== undefined) {
+              const val = (resp.data && typeof resp.data.ch_ping === 'number') ? resp.data.ch_ping : null;
+              if (val !== null) {
                 const oldVal = parseInt($ch.text(), 10);
                 if (oldVal !== val) {
                   $ch.text(val + ' ms').addClass('ping-changed');
@@ -424,7 +424,7 @@
             const $ch = $card.find('.vpnpm-ping-ch');
             if ($ch.length && server.ch_ping !== undefined) {
               const oldCh = parseInt($ch.text(), 10);
-              if (server.ch_ping !== null && oldCh !== server.ch_ping) {
+              if (server.ch_ping !== null && typeof server.ch_ping === 'number' && oldCh !== server.ch_ping) {
                 $ch.text(server.ch_ping + ' ms').addClass('ping-changed');
                 setTimeout(function() { $ch.removeClass('ping-changed'); }, 5000);
               }
