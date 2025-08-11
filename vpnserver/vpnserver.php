@@ -112,7 +112,7 @@ function vpnpm_render_dashboard_widget() {
         return;
     }
 
-    echo '<table class="widefat fixed striped">';
+    echo '<table class="widefat fixed striped vpnpm-dashboard-table">';
     echo '<thead><tr>';
     echo '<th>' . esc_html__('Server Name', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Status', 'vpnserver') . '</th>';
@@ -136,16 +136,69 @@ function vpnpm_render_dashboard_widget() {
         $relative_time = human_time_diff(strtotime($server->last_checked), current_time('timestamp'));
 
     $type = isset($server->type) ? strtolower($server->type) : 'standard';
-    echo '<tr>';
+                echo '<tr>';
     echo '<td>' . $name . '</td>';
     echo '<td><span class="badge ' . esc_attr($status_class) . '">' . ucfirst($status) . '</span></td>';
-    echo '<td>' . esc_html(ucfirst($type)) . '</td>';
-    echo '<td title="' . esc_attr($server->last_checked) . '">' . esc_html($relative_time) . ' ago</td>';
+                echo '<td>' . esc_html(ucfirst($type)) . '</td>';
+                $ts = $server->last_checked ? (int) strtotime($server->last_checked) : 0;
+                echo '<td title="' . esc_attr($server->last_checked) . '" data-timestamp="' . esc_attr($ts) . '">' . esc_html($relative_time) . ' ago</td>';
     echo '<td>' . ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')) . '</td>';
     echo '</tr>';
     }
 
     echo '</tbody></table>';
+
+        // Inline script to enable sorting by clicking on header cells
+        echo '<script>(function(){
+            const table = document.querySelector(".vpnpm-dashboard-table");
+            if (!table) return;
+            const tbody = table.querySelector("tbody");
+            const getStatusOrder = (txt) => { txt = (txt||"").toLowerCase(); if (txt === "active") return 0; if (txt === "unknown") return 1; if (txt === "down") return 2; return 3; };
+            const getTypeOrder = (txt) => { txt = (txt||"").toLowerCase(); return txt === "premium" ? 0 : 1; };
+            const parsePing = (txt) => { const m = (txt||"").match(/\d+/); return m ? parseInt(m[0],10) : Number.POSITIVE_INFINITY; };
+            const comparers = {
+                0: (a,b) => a.localeCompare(b, undefined, {sensitivity:"base"}),
+                1: (a,b) => getStatusOrder(a) - getStatusOrder(b),
+                2: (a,b) => getTypeOrder(a) - getTypeOrder(b),
+                3: (a,b) => (parseInt(a,10)||0) - (parseInt(b,10)||0),
+                4: (a,b) => (a===Infinity?Number.POSITIVE_INFINITY:a) - (b===Infinity?Number.POSITIVE_INFINITY:b)
+            };
+            const valueExtractors = {
+                0: (row) => row.children[0].textContent.trim(),
+                1: (row) => row.children[1].textContent.trim(),
+                2: (row) => row.children[2].textContent.trim(),
+                3: (row) => row.children[3].getAttribute("data-timestamp") || "0",
+                4: (row) => parsePing(row.children[4].textContent)
+            };
+            const setAria = (ths, activeIdx, dir) => {
+                ths.forEach((th,i)=>{
+                    if (i===activeIdx){ th.setAttribute("aria-sort", dir>0?"ascending":"descending"); }
+                    else { th.removeAttribute("aria-sort"); }
+                    th.style.cursor = "pointer";
+                });
+            };
+            const ths = Array.from(table.querySelectorAll("thead th"));
+            ths.forEach((th, idx) => {
+                th.addEventListener("click", function(){
+                    const dir = th.dataset.sortDir === "asc" ? -1 : 1; // toggle
+                    ths.forEach(t=>delete t.dataset.sortDir);
+                    th.dataset.sortDir = dir === 1 ? "asc" : "desc";
+                    setAria(ths, idx, dir);
+                    const rows = Array.from(tbody.querySelectorAll("tr"));
+                    const getVal = valueExtractors[idx] || ((r)=>r.children[idx].textContent.trim());
+                    const cmp = comparers[idx] || comparers[0];
+                    rows.sort((ra, rb) => {
+                        const va = getVal(ra); const vb = getVal(rb);
+                        const res = cmp(va, vb);
+                        return dir * res;
+                    });
+                    // Re-append in new order
+                    const frag = document.createDocumentFragment();
+                    rows.forEach(r=>frag.appendChild(r));
+                    tbody.appendChild(frag);
+                });
+            });
+        })();</script>';
 }
 
 // Add custom cron interval for 10 minutes
