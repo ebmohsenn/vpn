@@ -1,6 +1,27 @@
 <?php
 defined('ABSPATH') || exit;
 
+// AJAX: Send test Telegram message
+if (!function_exists('vpnpm_ajax_send_telegram_test')):
+add_action('wp_ajax_vpnpm_send_telegram_test', 'vpnpm_ajax_send_telegram_test');
+function vpnpm_ajax_send_telegram_test() {
+	if (!current_user_can('manage_options')) {
+		wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
+	}
+	check_ajax_referer('vpnpm-nonce');
+
+	$when = date_i18n('Y-m-d H:i:s');
+	$ok = function_exists('vpnpm_send_telegram_message')
+		? vpnpm_send_telegram_message("VPN Server Manager test message: " . $when)
+		: false;
+
+	if ($ok) {
+		wp_send_json_success(['message' => __('Telegram message sent.', 'vpnserver')]);
+	}
+	wp_send_json_error(['message' => __('Telegram not configured or send failed.', 'vpnserver')]);
+}
+endif;
+
 // AJAX: Test server
 if (!function_exists('vpnpm_ajax_test_server')):
 add_action('wp_ajax_vpnpm_test_server', 'vpnpm_ajax_test_server');
