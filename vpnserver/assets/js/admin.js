@@ -98,12 +98,30 @@
       });
     });
 
+    // Helper: close edit modal with safe focus handling
+    function closeEditModal() {
+      const $modal = $('#vpnpm-edit-modal');
+      // Move focus to a safe element outside the modal before hiding
+      const $fallbackFocus = $('#vpnpm-add-server-btn');
+      if ($fallbackFocus.length) { $fallbackFocus.trigger('focus'); }
+      else { $('body').attr('tabindex','-1').trigger('focus'); }
+      // Hide modal and mark as hidden for AT
+      $modal.attr('aria-hidden', 'true').attr('hidden', 'hidden').attr('inert','');
+    }
+
+    // Close edit modal (buttons/backdrop)
+    $(document).on('click', '.vpnpm-modal-close[data-close="edit"], #vpnpm-edit-modal .vpnpm-modal-backdrop[data-close="edit"]', function() {
+      closeEditModal();
+    });
+
     // Open edit modal
     function openEditModal(id) {
       const $modal = $('#vpnpm-edit-modal');
-      $modal.attr('aria-hidden', 'false').removeAttr('hidden');
+      $modal.removeAttr('inert').attr('aria-hidden', 'false').removeAttr('hidden');
       $('#vpnpm-edit-form')[0].reset();
       $('#vpnpm-edit-id').val(id);
+      // Focus first field when opening
+      setTimeout(function(){ $('#vpnpm-edit-remote').trigger('focus'); }, 0);
       $.ajax({
         url: vpnpmAjax.ajaxurl,
         type: 'GET',
@@ -130,12 +148,6 @@
 
     $(document).on('click', '.vpnpm-edit-btn', function() {
       openEditModal($(this).data('id'));
-    });
-
-    // Close edit modal
-    $(document).on('click', '.vpnpm-modal-close[data-close="edit"], #vpnpm-edit-modal .vpnpm-modal-backdrop[data-close="edit"]', function() {
-      $('#vpnpm-edit-modal').find(':focus').blur();
-      $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
     });
 
     // Save edit form
@@ -217,8 +229,9 @@
         dataType: 'json',
         data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce },
       }).done(function(resp) {
-        if (resp && resp.success && Array.isArray(resp.servers)) {
-          resp.servers.forEach(function(server) {
+        const arr = resp && resp.success && resp.data && Array.isArray(resp.data.servers) ? resp.data.servers : null;
+        if (arr) {
+          arr.forEach(function(server) {
             lastCheckedTimes[server.id] = server.last_checked;
             const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
             if (!$card.length) return;
