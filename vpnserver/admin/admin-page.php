@@ -11,6 +11,35 @@ function vpnpm_admin_page() {
 	$msg = isset($_GET['vpnpm_msg']) ? sanitize_text_field($_GET['vpnpm_msg']) : '';
 	?>
 	<div class="wrap">
+		<?php if (function_exists('vpnpm_checkhost_is_blocked') && vpnpm_checkhost_is_blocked()): ?>
+			<div class="notice notice-warning" style="margin:15px 0;">
+				<p>
+					<?php echo esc_html__('Check-Host is temporarily disabled due to a recent 403 (cooldown active).', 'vpnserver'); ?>
+					<button type="button" class="button button-secondary" id="vpnpm-clear-ch-cooldown" style="margin-left:10px;">
+						<?php echo esc_html__('Clear Cooldown', 'vpnserver'); ?>
+					</button>
+				</p>
+			</div>
+			<script>
+			(function($){
+				$('#vpnpm-clear-ch-cooldown').on('click', function(){
+					var $btn = $(this);
+					$btn.prop('disabled', true).text('Clearing...');
+					$.post(vpnpmAjax.ajaxurl, { action: 'vpnpm_clear_checkhost_cooldown', _ajax_nonce: vpnpmAjax.nonce })
+					 .done(function(resp){
+						alert((resp && resp.data && resp.data.message) ? resp.data.message : 'Cooldown cleared.');
+						location.reload();
+					 })
+					 .fail(function(){
+						alert('Failed to clear cooldown.');
+					 })
+					 .always(function(){
+						$btn.prop('disabled', false).text('<?php echo esc_js(__('Clear Cooldown', 'vpnserver')); ?>');
+					 });
+				});
+			})(jQuery);
+			</script>
+		<?php endif; ?>
 		<?php if ($msg): ?>
 			<div class="notice notice-<?php echo ($msg === 'success') ? 'success' : 'error'; ?> is-dismissible">
 				<p>

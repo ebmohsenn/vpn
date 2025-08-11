@@ -98,6 +98,19 @@ function vpnpm_ajax_get_checkhost_details() {
 }
 endif;
 
+// AJAX: Clear Check-Host cooldown so tests can resume immediately
+if (!function_exists('vpnpm_ajax_clear_checkhost_cooldown')):
+add_action('wp_ajax_vpnpm_clear_checkhost_cooldown', 'vpnpm_ajax_clear_checkhost_cooldown');
+function vpnpm_ajax_clear_checkhost_cooldown() {
+	check_ajax_referer('vpnpm-nonce');
+	if (!current_user_can('manage_options')) {
+		wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
+	}
+	delete_transient('vpnpm_checkhost_cooldown');
+	wp_send_json_success(['message' => __('Cooldown cleared. You can retry Check-Host now.', 'vpnserver')]);
+}
+endif;
+
 // AJAX: Test server
 if (!function_exists('vpnpm_ajax_test_server')):
 add_action('wp_ajax_vpnpm_test_server', 'vpnpm_ajax_test_server');
