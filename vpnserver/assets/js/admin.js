@@ -217,7 +217,7 @@
         dataType: 'json',
         data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce },
       }).done(function(resp) {
-        if (resp && resp.success) {
+        if (resp && resp.success && Array.isArray(resp.servers)) {
           resp.servers.forEach(function(server) {
             lastCheckedTimes[server.id] = server.last_checked;
             const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
@@ -242,6 +242,8 @@
               $lastChecked.attr('title', new Date(server.last_checked).toLocaleString());
             }
           });
+        } else {
+          console.warn('No servers array in response', resp);
         }
       });
     }, 30000);
