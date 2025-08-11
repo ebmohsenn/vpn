@@ -321,54 +321,6 @@ function vpnpm_ajax_get_all_status() {
 }
 endif;
 
-// Schedule ping test every 10 minutes
-if ( ! wp_next_scheduled( 'vpnpm_cron_ping_servers' ) ) {
-    wp_schedule_event( time(), 'ten_minutes', 'vpnpm_cron_ping_servers' );
-}
-add_filter( 'cron_schedules', function( $schedules ) {
-    $schedules['ten_minutes'] = [
-        'interval' => 600,
-        'display'  => __( 'Every 10 Minutes' ),
-    ];
-    return $schedules;
-});
-
-add_action( 'vpnpm_cron_ping_servers', function() {
-    global $wpdb;
-    $table = $wpdb->prefix . 'vpn_profiles';
-    $servers = $wpdb->get_results( "SELECT id FROM {$table}" );
-    if ( $servers ) {
-        foreach ( $servers as $srv ) {
-            // Simulate AJAX ping update
-            $profile = vpnpm_get_profile_by_id( $srv->id );
-            if ( ! $profile ) continue;
-
-            $host = $profile->remote_host;
-            $port = (int)$profile->port ?: 1194;
-            $timeout = 3;
-
-            $status = 'down';
-            $start = microtime(true);
-            $fp = @fsockopen($host, $port, $errno, $errstr, $timeout);
-            if ($fp) {
-                $status = 'active';
-                fclose($fp);
-            }
-            $ping_ms = (int)round((microtime(true) - $start) * 1000);
-
-            $wpdb->update(
-                $table,
-                [
-                    'status'       => $status,
-                    'ping'         => $ping_ms,
-                    'last_checked' => current_time('mysql')
-                ],
-                ['id' => $srv->id],
-                ['%s', '%d', '%s'],
-                ['%d']
-            );
-        }
-    }
-});
+// Cron scheduling and ping processing is handled in vpnserver.php with settings-aware logic.
 
 // End of ajax-handlers

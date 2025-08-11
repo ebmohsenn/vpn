@@ -24,6 +24,7 @@ if (!defined('VPNSERVER_TELEGRAM_CHAT_ID')) {
 require_once VPNSERVER_PLUGIN_DIR . 'includes/db-functions.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/parser.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/helpers.php';
+require_once VPNSERVER_PLUGIN_DIR . 'includes/class-vpn-settings.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/ajax-handlers.php';
 require_once VPNSERVER_PLUGIN_DIR . 'admin/admin-page.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/vpn-telegram-functions.php';
@@ -34,8 +35,15 @@ require_once VPNSERVER_PLUGIN_DIR . 'includes/vpn-telegram-functions.php';
 register_activation_hook(__FILE__, 'vpnserver_activate_plugin');
 function vpnserver_activate_plugin() {
     vpnpm_create_tables(); // or vpnserver_create_tables() if you renamed it
+    // Initialize settings and schedule cron based on defaults
+    if (class_exists('Vpnpm_Settings')) {
+        $settings = new Vpnpm_Settings();
+        Vpnpm_Settings::maybe_schedule(true);
+    }
     flush_rewrite_rules();
 }
+// Ensure settings class is instantiated (in case activation not just run)
+if (class_exists('Vpnpm_Settings')) { new Vpnpm_Settings(); }
 
 // Admin menu
 add_action('admin_menu', 'vpnserver_add_admin_menu');
@@ -265,10 +273,24 @@ function vpnpm_test_all_servers() {
         $lines[] = sprintf('#%d | status: %s | ping: %s', (int) $server->id, $status, ($ping !== false ? ($ping . ' ms') : 'N/A'));
     }
 
-    if (!empty($lines)) {
-        $title = 'VPN Status Update - ' . date_i18n('Y-m-d H:i');
-        $summary = $title . "\n" . implode("\n", $lines);
-        vpnpm_send_telegram_message($summary);
+    // Respect settings: send telegram only if enabled and if any lines
+    if (!empty($lines) && class_exists('Vpnpm_Settings')) {
+        $opts = Vpnpm_Settings::get_settings();
+        if (!empty($opts['enable_telegram'])) {
+            $title = 'VPN Status Update - ' . date_i18n('Y-m-d H:i');
+            $summary = $title . "\n" . implode("\n", $lines);
+
+            // If multiple chat IDs configured, temporarily override constant-based chat ID
+            $idsCsv = isset($opts['telegram_chat_ids']) ? (string) $opts['telegram_chat_ids'] : '';
+            $ids = array_filter(array_map('trim', explode(',', $idsCsv)));
+            if ($ids) {
+                foreach ($ids as $id) {
+                    vpnpm_send_telegram_message($summary, $id);
+                }
+            } else {
+                vpnpm_send_telegram_message($summary);
+            }
+        }
     }
 }
 

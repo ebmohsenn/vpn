@@ -19,11 +19,12 @@ if (!function_exists('vpnpm_send_telegram_message')):
  * - Returns true if all chunks succeed, false otherwise
  *
  * @param string $message
+ * @param string|null $chatId Optional override for chat ID; defaults to VPNSERVER_TELEGRAM_CHAT_ID constant
  * @return bool
  */
-function vpnpm_send_telegram_message($message) {
+function vpnpm_send_telegram_message($message, $chatId = null) {
 	$token = defined('VPNSERVER_TELEGRAM_BOT_TOKEN') ? trim((string) VPNSERVER_TELEGRAM_BOT_TOKEN) : '';
-	$chat  = defined('VPNSERVER_TELEGRAM_CHAT_ID') ? trim((string) VPNSERVER_TELEGRAM_CHAT_ID) : '';
+	$chat  = $chatId !== null ? trim((string) $chatId) : (defined('VPNSERVER_TELEGRAM_CHAT_ID') ? trim((string) VPNSERVER_TELEGRAM_CHAT_ID) : '');
 	if ($token === '' || $chat === '') {
 		return false; // Not configured
 	}
