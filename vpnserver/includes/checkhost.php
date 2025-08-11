@@ -1,7 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
-// Simple Check-Host API client and processing utilities
+// Check-Host API client and processing utilities (official endpoints)
 
 if (!function_exists('vpnpm_checkhost_curated_nodes')):
 function vpnpm_checkhost_curated_nodes() {
@@ -46,14 +46,27 @@ function vpnpm_checkhost_label_for_host($host) {
 endif;
 
 if (!function_exists('vpnpm_checkhost_initiate_ping')):
+/**
+ * Start a Check-Host ping test using the official API.
+ * - POST https://check-host.net/check-ping
+ * - Required: host
+ * - Optional: nodes[]=node-hostname (repeatable)
+ * Returns: [array $init|false, string|null $error]
+ */
 function vpnpm_checkhost_initiate_ping($target, array $nodes = []) {
     $endpoint = 'https://check-host.net/check-ping';
-    $body = ['host' => $target];
-    if (!empty($nodes)) {
-        $body['node'] = $nodes; // multiple nodes allowed
+    // Build body with nodes[]=... format explicitly
+    $pairs = [ 'host=' . rawurlencode($target) ];
+    foreach ($nodes as $n) {
+        $n = trim((string)$n);
+        if ($n !== '') {
+            $pairs[] = 'nodes%5B%5D=' . rawurlencode($n); // nodes[] url-encoded key
+        }
     }
+    $body = implode('&', $pairs);
     $response = wp_remote_post($endpoint, [
-        'timeout' => 10,
+        'timeout' => 12,
+        'headers' => ['Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8'],
         'body'    => $body,
     ]);
     if (is_wp_error($response)) return [false, $response->get_error_message()];
@@ -74,9 +87,13 @@ function vpnpm_checkhost_initiate_ping($target, array $nodes = []) {
 endif;
 
 if (!function_exists('vpnpm_checkhost_poll_result')):
+/**
+ * Poll Check-Host for results by request_id until available.
+ * Returns: [array $json|false, string|null $error]
+ */
 function vpnpm_checkhost_poll_result($request_id) {
     $url = sprintf('https://check-host.net/check-result/%s', rawurlencode($request_id));
-    $resp = wp_remote_get($url, ['timeout' => 10]);
+    $resp = wp_remote_get($url, ['timeout' => 12]);
     if (is_wp_error($resp)) return [false, $resp->get_error_message()];
     $code = wp_remote_retrieve_response_code($resp);
     if ($code !== 200) return [false, 'HTTP ' . $code];
@@ -104,6 +121,45 @@ function vpnpm_checkhost_aggregate_ping_ms($result_json) {
     }
     if (empty($pings)) return null;
     return (int) round(array_sum($pings) / count($pings));
+}
+endif;
+
+if (!function_exists('vpnpm_checkhost_parse_nodes')):
+/**
+ * Parse per-node stats (avg/min/max/loss/samples) from Check-Host result JSON.
+ * Returns an array of [node, label, avg, min, max, loss, samples].
+ */
+function vpnpm_checkhost_parse_nodes($result_json) {
+    if (!is_array($result_json)) return [];
+    $out = [];
+    foreach ($result_json as $nodeName => $series) {
+        $samples = 0; $succ = 0; $latencies = [];
+        if (is_array($series)) {
+            foreach ($series as $rowItem) {
+                $samples++;
+                if (is_array($rowItem) && isset($rowItem[1]) && is_array($rowItem[1]) && isset($rowItem[1][0])) {
+                    $lat = floatval($rowItem[1][0]) * 1000; // seconds -> ms
+                    if ($lat > 0) { $latencies[] = $lat; $succ++; }
+                }
+            }
+        }
+        $avg = !empty($latencies) ? (int) round(array_sum($latencies) / count($latencies)) : null;
+        $min = !empty($latencies) ? (int) round(min($latencies)) : null;
+        $max = !empty($latencies) ? (int) round(max($latencies)) : null;
+        $loss = $samples > 0 ? (int) round((($samples - $succ) / $samples) * 100) : null;
+        $label = function_exists('vpnpm_checkhost_label_for_host') ? vpnpm_checkhost_label_for_host($nodeName) : $nodeName;
+        $out[] = [
+            'node' => (string)$nodeName,
+            'label'=> (string)$label,
+            'avg'  => $avg,
+            'min'  => $min,
+            'max'  => $max,
+            'loss' => $loss,
+            'samples' => $samples,
+        ];
+    }
+    usort($out, function($a,$b){ $av = $a['avg'] ?? PHP_INT_MAX; $bv = $b['avg'] ?? PHP_INT_MAX; return $av <=> $bv; });
+    return $out;
 }
 endif;
 

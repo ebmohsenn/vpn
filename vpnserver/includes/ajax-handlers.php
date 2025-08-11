@@ -83,37 +83,7 @@ function vpnpm_ajax_get_checkhost_details() {
 	if (!is_array($raw)) {
 		wp_send_json_error(['message' => __('Invalid stored data.', 'vpnserver')]);
 	}
-	$nodes = [];
-	foreach ($raw as $nodeName => $series) {
-		$samples = 0; $succ = 0; $latencies = [];
-		if (is_array($series)) {
-			foreach ($series as $rowItem) {
-				$samples++;
-				if (is_array($rowItem) && isset($rowItem[1]) && is_array($rowItem[1]) && isset($rowItem[1][0])) {
-					$lat = floatval($rowItem[1][0]) * 1000; // to ms
-					if ($lat > 0) { $latencies[] = $lat; $succ++; }
-				}
-			}
-		}
-		$avg = !empty($latencies) ? round(array_sum($latencies) / count($latencies)) : null;
-		$min = !empty($latencies) ? (int) round(min($latencies)) : null;
-		$max = !empty($latencies) ? (int) round(max($latencies)) : null;
-		$loss = $samples > 0 ? round((($samples - $succ) / $samples) * 100) : null;
-		$label = function_exists('vpnpm_checkhost_label_for_host') ? vpnpm_checkhost_label_for_host($nodeName) : $nodeName;
-		$nodes[] = [
-			'node' => (string)$nodeName,
-			'label'=> (string)$label,
-			'avg'  => $avg,
-			'min'  => $min,
-			'max'  => $max,
-			'loss' => $loss,
-			'samples' => $samples,
-		];
-	}
-	usort($nodes, function($a,$b){
-		$av = $a['avg'] ?? PHP_INT_MAX; $bv = $b['avg'] ?? PHP_INT_MAX;
-		return $av <=> $bv;
-	});
+	$nodes = function_exists('vpnpm_checkhost_parse_nodes') ? vpnpm_checkhost_parse_nodes($raw) : [];
 	$payload = [
 		'server' => pathinfo((string)$row->file_name, PATHINFO_FILENAME),
 		'updated' => $row->checkhost_last_checked ? (string)$row->checkhost_last_checked : null,
