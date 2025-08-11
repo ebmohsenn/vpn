@@ -128,10 +128,14 @@ endif;
  * @return string MarkdownV2 formatted status message
  */
 function vpnpm_format_vpn_status_message_stylish(array $servers): string {
-	$date = date('Y-m-d H:i');
 	$lines = [];
 	$lines[] = '*VPN Status Update*';
-	$lines[] = '_As of ' . $date . '_';
+	$escape_md = function($text) {
+		// Escape all Telegram MarkdownV2 special chars, including '-'
+		return preg_replace('/([_\*\[\]()~`>#+\-=|{}.!\-])/', '\\$1', (string)$text);
+	};
+	$date = date('Y-m-d H:i');
+	$lines[] = '_As of ' . $escape_md($date) . '_';
 	$lines[] = '';
 		$escape_md = function($text) {
 			// Escape all Telegram MarkdownV2 special chars, including '-'
