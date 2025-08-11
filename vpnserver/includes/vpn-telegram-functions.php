@@ -111,3 +111,47 @@ function send_telegram_message($message) {
 	return vpnpm_send_telegram_message($message);
 }
 endif;
+
+/**
+ * Format a MarkdownV2 styled VPN status message for Telegram.
+ *
+ * @param array $servers Each server is an associative array with keys:
+ *   - name: string
+ *   - status: string ('active' or 'down')
+ *   - ping: int|string
+ *   - type: string
+ * @return string MarkdownV2 formatted status message
+ */
+function vpnpm_format_vpn_status_message_stylish(array $servers): string {
+	$date = date('Y-m-d H:i');
+	$lines = [];
+	$lines[] = '*VPN Status Update*';
+	$lines[] = '_As of ' . $date . '_';
+	$lines[] = '';
+	foreach ($servers as $srv) {
+		// Escape MarkdownV2 special chars in name
+		$name = isset($srv['name']) ? (string)$srv['name'] : '';
+		$name = preg_replace('/([_*\[\]()~`>#+\-=|{}.!])/', '\\\\$1', $name);
+		$status = isset($srv['status']) ? strtolower((string)$srv['status']) : '';
+		$emoji = $status === 'active' ? "\xF0\x9F\x9F\xA2" : "\xF0\x9F\x94\xB4"; // green or red circle
+		$ping = isset($srv['ping']) ? $srv['ping'] : '';
+		$type = isset($srv['type']) ? (string)$srv['type'] : '';
+		// Status string
+		$status_str = ($status === 'active' ? '*Online*' : '*Down*');
+		// Compose block
+		$block = "{$emoji} *{$name}* {$status_str}\n";
+		$block .= "Ping: `{$ping}` ms\n";
+		$block .= "Type: _" . preg_replace('/([_*\[\]()~`>#+\-=|{}.!])/', '\\\\$1', $type) . "_";
+		$lines[] = $block;
+		$lines[] = '';
+	}
+	return trim(implode("\n", $lines));
+}
+
+// Example usage:
+// $servers = [
+//   ['name' => 'Server 1', 'status' => 'active', 'ping' => 34, 'type' => 'WireGuard'],
+//   ['name' => 'Server 2', 'status' => 'down', 'ping' => 0, 'type' => 'OpenVPN'],
+// ];
+// $msg = vpnpm_format_vpn_status_message_stylish($servers);
+// vpnpm_send_telegram_message($msg, null, 'MarkdownV2');
