@@ -1,5 +1,29 @@
 (function($) {
   $(function() {
+    // Telegram Test button
+    $(document).on('click', '#vpnpm-telegram-test', function() {
+      const $btn = $(this);
+      const orig = $btn.text();
+      $btn.prop('disabled', true).text('Sending...');
+      $.ajax({
+        url: vpnpmAjax.ajaxurl,
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'vpnpm_send_telegram_test', _ajax_nonce: vpnpmAjax.nonce }
+      }).done(function(resp){
+        if (resp && resp.success) {
+          $btn.text('Sent ✓');
+        } else {
+          alert((resp && resp.data && resp.data.message) || 'Telegram test failed.');
+          $btn.text(orig);
+        }
+      }).fail(function(){
+        alert('Telegram test failed.');
+        $btn.text(orig);
+      }).always(function(){
+        setTimeout(function(){ $btn.prop('disabled', false).text(orig); }, 1500);
+      });
+    });
     // Search filter
     $(document).on('input', '#vpnpm-search', function() {
       const q = $(this).val().toString().toLowerCase().trim();

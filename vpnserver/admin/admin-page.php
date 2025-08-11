@@ -33,6 +33,7 @@ function vpnpm_admin_page() {
 			<h1>VPN Manager</h1>
 			<div>
 				<button class="vpn-btn vpn-btn-primary" id="vpnpm-add-server-btn">+ Add Server</button>
+				<button class="vpn-btn vpn-btn-secondary" id="vpnpm-telegram-test" type="button" aria-label="Send Telegram test message">Send Telegram Test</button>
 				<input type="text" class="vpn-search" id="vpnpm-search" placeholder="Search servers..." aria-label="Search servers" />
 			</div>
 		</div>
