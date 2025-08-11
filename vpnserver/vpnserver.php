@@ -269,8 +269,10 @@ function vpnpm_test_all_servers() {
 
     $opts = class_exists('Vpnpm_Settings') ? Vpnpm_Settings::get_settings() : [];
     $ping_source = isset($opts['ping_source']) ? $opts['ping_source'] : 'server';
-    $node_str = isset($opts['checkhost_nodes']) ? (string)$opts['checkhost_nodes'] : '';
-    $nodes = array_values(array_filter(array_map('trim', explode(',', $node_str))));
+    $nodes = get_option('vpnsm_checkhost_nodes', []);
+    if (!is_array($nodes) || empty($nodes)) {
+        $nodes = ['de-fra01.check-host.net', 'us-nyc01.check-host.net']; // fallback
+    }
 
     // Update statuses and pings
     foreach ($servers as $server) {

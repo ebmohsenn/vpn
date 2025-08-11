@@ -1,5 +1,36 @@
 (function($) {
   $(function() {
+    // ...existing code...
+
+    // Settings: Load Check-Host Nodes dynamically
+    $(document).on('click', '#vpnsm-load-nodes-btn', function() {
+      var $btn = $(this);
+      var $list = $('#vpnsm-nodes-list');
+      $btn.prop('disabled', true).text('Loading...');
+      $.ajax({
+        url: ajaxurl,
+        type: 'GET',
+        dataType: 'json',
+        data: { action: 'vpnsm_refresh_nodes', _wpnonce: $btn.data('nonce') || '' },
+      }).done(function(resp) {
+        $list.empty();
+        if (resp && resp.nodes) {
+          Object.entries(resp.nodes).forEach(function([host, label]) {
+            var checked = (resp.selected && resp.selected.includes(host)) ? 'checked' : '';
+            var html = '<label style="display:block;margin-bottom:2px;"><input type="checkbox" name="vpnsm_checkhost_nodes[]" value="' + host + '" ' + checked + '/> ' + label + ' <code>' + host + '</code></label>';
+            $list.append(html);
+          });
+        }
+      }).always(function() {
+        $btn.prop('disabled', false).text('Load Nodes');
+      });
+    });
+
+    // ...existing code...
+  });
+})(jQuery);
+(function($) {
+  $(function() {
     // Settings: Send Test Telegram Notification
     $(document).on('click', '#vpnpm-settings-telegram-test', function() {
       const $btn = $(this);
