@@ -103,7 +103,9 @@ function vpnpm_add_dashboard_widget() {
 function vpnpm_render_dashboard_widget() {
     global $wpdb;
     $table = $wpdb->prefix . 'vpn_profiles';
-    $servers = $wpdb->get_results("SELECT file_name, status, last_checked, ping FROM {$table} ORDER BY last_checked DESC");
+    // Ensure schema has the 'type' column
+    if (function_exists('vpnpm_ensure_schema')) { vpnpm_ensure_schema(); }
+    $servers = $wpdb->get_results("SELECT file_name, status, last_checked, ping, type FROM {$table} ORDER BY last_checked DESC");
 
     if (empty($servers)) {
         echo '<p>' . esc_html__('No VPN servers found.', 'vpnserver') . '</p>';
@@ -114,6 +116,7 @@ function vpnpm_render_dashboard_widget() {
     echo '<thead><tr>';
     echo '<th>' . esc_html__('Server Name', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Status', 'vpnserver') . '</th>';
+    echo '<th>' . esc_html__('Type', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Last Checked', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Ping (ms)', 'vpnserver') . '</th>';
     echo '</tr></thead><tbody>';
@@ -132,12 +135,14 @@ function vpnpm_render_dashboard_widget() {
 
         $relative_time = human_time_diff(strtotime($server->last_checked), current_time('timestamp'));
 
-        echo '<tr>';
-        echo '<td>' . $name . '</td>';
-        echo '<td><span class="badge ' . esc_attr($status_class) . '">' . ucfirst($status) . '</span></td>';
-        echo '<td title="' . esc_attr($server->last_checked) . '">' . esc_html($relative_time) . ' ago</td>';
-        echo '<td>' . ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')) . '</td>';
-        echo '</tr>';
+    $type = isset($server->type) ? strtolower($server->type) : 'standard';
+    echo '<tr>';
+    echo '<td>' . $name . '</td>';
+    echo '<td><span class="badge ' . esc_attr($status_class) . '">' . ucfirst($status) . '</span></td>';
+    echo '<td>' . esc_html(ucfirst($type)) . '</td>';
+    echo '<td title="' . esc_attr($server->last_checked) . '">' . esc_html($relative_time) . ' ago</td>';
+    echo '<td>' . ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')) . '</td>';
+    echo '</tr>';
     }
 
     echo '</tbody></table>';
