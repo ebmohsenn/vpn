@@ -133,24 +133,24 @@ function vpnpm_format_vpn_status_message_stylish(array $servers): string {
 	$lines[] = '*VPN Status Update*';
 	$lines[] = '_As of ' . $date . '_';
 	$lines[] = '';
-	foreach ($servers as $srv) {
-		// Escape MarkdownV2 special chars in name
-		$name = isset($srv['name']) ? (string)$srv['name'] : '';
-		$name = preg_replace('/([_*\[\]()~`>#+\-=|{}.!])/', '\\\\$1', $name);
-		$status = isset($srv['status']) ? strtolower((string)$srv['status']) : '';
-		$emoji = $status === 'active' ? "\xF0\x9F\x9F\xA2" : "\xF0\x9F\x94\xB4"; // green or red circle
-		$ping = isset($srv['ping']) ? $srv['ping'] : '';
-		$type = isset($srv['type']) ? (string)$srv['type'] : '';
-		// Status string
-		$status_str = ($status === 'active' ? '*Online*' : '*Down*');
-		// Compose block
-		$block = "{$emoji} *{$name}* {$status_str}\n";
-		$block .= "Ping: `{$ping}` ms\n";
-		$block .= "Type: _" . preg_replace('/([_*\[\]()~`>#+\-=|{}.!])/', '\\\\$1', $type) . "_";
-		$lines[] = $block;
-		$lines[] = '';
-	}
-	return trim(implode("\n", $lines));
+		$escape_md = function($text) {
+			// Escape all Telegram MarkdownV2 special chars, including '-'
+			return preg_replace('/([_\*\[\]()~`>#+\-=|{}.!\\-])/', '\\\\$1', $text);
+		};
+		foreach ($servers as $srv) {
+			$name = isset($srv['name']) ? $escape_md((string)$srv['name']) : '';
+			$status = isset($srv['status']) ? strtolower((string)$srv['status']) : '';
+			$emoji = $status === 'active' ? "\xF0\x9F\x9F\xA2" : "\xF0\x9F\x94\xB4"; // green or red circle
+			$ping = isset($srv['ping']) ? $srv['ping'] : '';
+			$type = isset($srv['type']) ? $escape_md((string)$srv['type']) : '';
+			$status_str = ($status === 'active' ? '*Online*' : '*Down*');
+			$block = "{$emoji} *{$name}* {$status_str}\n";
+			$block .= "Ping: `{$ping}` ms\n";
+			$block .= "Type: _{$type}_";
+			$lines[] = $block;
+			$lines[] = '';
+		}
+		return trim(implode("\n", $lines));
 }
 
 // Example usage:
