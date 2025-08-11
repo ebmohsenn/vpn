@@ -13,6 +13,12 @@ defined('ABSPATH') || exit;
 if (!defined('VPNSERVER_VERSION')) define('VPNSERVER_VERSION', '1.0.0');
 if (!defined('VPNSERVER_PLUGIN_DIR')) define('VPNSERVER_PLUGIN_DIR', plugin_dir_path(__FILE__));
 if (!defined('VPNSERVER_PLUGIN_URL')) define('VPNSERVER_PLUGIN_URL', plugin_dir_url(__FILE__));
+// Optional: define these in wp-config.php or here to enable Telegram notifications
+// define('VPNSERVER_TELEGRAM_BOT_TOKEN', '123456789:ABCDEF...');
+// define('VPNSERVER_TELEGRAM_CHAT_ID', '123456789');
+if (!defined('VPNSERVER_TELEGRAM_CHAT_ID')) {
+    define('VPNSERVER_TELEGRAM_CHAT_ID', '187417516'); // default chat ID provided by user
+}
 
 // Includes
 require_once VPNSERVER_PLUGIN_DIR . 'includes/db-functions.php';
@@ -20,6 +26,9 @@ require_once VPNSERVER_PLUGIN_DIR . 'includes/parser.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/helpers.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/ajax-handlers.php';
 require_once VPNSERVER_PLUGIN_DIR . 'admin/admin-page.php';
+require_once VPNSERVER_PLUGIN_DIR . 'includes/vpn-telegram-functions.php';
+
+// Telegram functions are now loaded from includes/vpn-telegram-functions.php
 
 // Activation
 register_activation_hook(__FILE__, 'vpnserver_activate_plugin');
@@ -235,21 +244,31 @@ function vpnpm_test_all_servers() {
     $table = $wpdb->prefix . 'vpn_profiles';
     $servers = $wpdb->get_results("SELECT id, remote_host, port FROM {$table}");
 
+    $lines = [];
     foreach ($servers as $server) {
         $ping = vpnpm_get_server_ping($server->remote_host, $server->port);
         $status = $ping !== false ? 'active' : 'down';
+        $now = current_time('mysql');
 
         $wpdb->update(
             $table,
             [
                 'status'       => $status,
-                'last_checked' => current_time('mysql'),
+                'last_checked' => $now,
                 'ping'         => $ping !== false ? $ping : null,
             ],
             ['id' => $server->id],
             ['%s', '%s', '%d'],
             ['%d']
         );
+
+        $lines[] = sprintf('#%d | status: %s | ping: %s', (int) $server->id, $status, ($ping !== false ? ($ping . ' ms') : 'N/A'));
+    }
+
+    if (!empty($lines)) {
+        $title = 'VPN Status Update - ' . date_i18n('Y-m-d H:i');
+        $summary = $title . "\n" . implode("\n", $lines);
+        vpnpm_send_telegram_message($summary);
     }
 }
 
