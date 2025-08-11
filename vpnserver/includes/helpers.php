@@ -28,9 +28,16 @@ function vpnsm_get_checkhost_nodes($force_refresh = false) {
 		return $cached;
 	}
 	$api_url = 'https://check-host.net/nodes/hosts';
-	$response = wp_remote_get($api_url, ['timeout' => 12]);
+	$headers = [
+		'Accept'           => 'application/json, */*;q=0.8',
+		'User-Agent'       => 'VPNServerManager/1.0 (+https://wordpress.org; WP ' . get_bloginfo('version') . ')',
+		'Referer'          => 'https://check-host.net/',
+		'Accept-Language'  => get_locale() ? str_replace('_', '-', get_locale()) . ',en;q=0.8' : 'en-US,en;q=0.8',
+	];
+	$response = wp_remote_get($api_url, ['timeout' => 15, 'headers' => $headers]);
 	$nodes = [];
-	if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+	$code = !is_wp_error($response) ? wp_remote_retrieve_response_code($response) : null;
+	if (!is_wp_error($response) && $code === 200) {
 		$json = json_decode(wp_remote_retrieve_body($response), true);
 		if (is_array($json)) {
 			foreach ($json as $host => $info) {
@@ -41,6 +48,10 @@ function vpnsm_get_checkhost_nodes($force_refresh = false) {
 				}
 			}
 		}
+	}
+	if (defined('WP_DEBUG') && WP_DEBUG && (is_wp_error($response) || $code !== 200)) {
+		$err = is_wp_error($response) ? $response->get_error_message() : 'HTTP ' . $code . ' Body: ' . substr((string) wp_remote_retrieve_body($response), 0, 200);
+		error_log('[vpnserver] Nodes fetch failed, using fallback. Reason: ' . $err);
 	}
 	if (empty($nodes)) {
 		$nodes = [
