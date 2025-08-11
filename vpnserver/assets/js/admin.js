@@ -3,7 +3,7 @@
     // Search filter
     $(document).on('input', '#vpnpm-search', function() {
       const q = $(this).val().toString().toLowerCase().trim();
-  $('#vpnpm-grid .vpnpm-card').each(function() {
+      $('#vpnpm-grid .vpnpm-card').each(function() {
         const hay = ($(this).data('search') || '').toString();
         $(this).toggle(hay.indexOf(q) !== -1);
       });
@@ -14,7 +14,8 @@
       $('#vpnpm-modal').attr('aria-hidden', 'false').removeAttr('hidden');
     });
     $(document).on('click', '#vpnpm-modal-close, #vpnpm-modal-close-btn, #vpnpm-cancel', function() {
-        $('#vpnpm-modal').attr('inert', '').attr('hidden', 'hidden');
+      $('#vpnpm-modal').find(':focus').blur();
+      $('#vpnpm-modal').attr('inert', '').attr('hidden', 'hidden');
     });
 
     // Test single server
@@ -41,7 +42,6 @@
         if (!$last.length) $last = $('<small class="vpnpm-last-checked" />').appendTo($status.parent());
         if (last) $last.text('Last checked: ' + last);
 
-        // Update ping display
         const $ping = $card.find('.vpnpm-ping');
         const newPing = resp && resp.success ? resp.data.ping : null;
         if (newPing !== null) {
@@ -98,10 +98,10 @@
       });
     });
 
-    // Open edit modal and load data
+    // Open edit modal
     function openEditModal(id) {
-  const $modal = $('#vpnpm-edit-modal');
-  $modal.attr('aria-hidden', 'false').removeAttr('hidden');
+      const $modal = $('#vpnpm-edit-modal');
+      $modal.attr('aria-hidden', 'false').removeAttr('hidden');
       $('#vpnpm-edit-form')[0].reset();
       $('#vpnpm-edit-id').val(id);
       $.ajax({
@@ -118,8 +118,8 @@
           $('#vpnpm-edit-cipher').val(d.cipher || '');
           $('#vpnpm-edit-status').val((d.status || 'unknown').toLowerCase());
           $('#vpnpm-edit-notes').val(d.notes || '');
-          $('#vpnpm-edit-label').val((d.label || 'standard').toLowerCase()); // Add label field
-          $('#vpnpm-edit-type').val((d.type || 'standard').toLowerCase()); // Add type field
+          $('#vpnpm-edit-label').val((d.label || 'standard').toLowerCase());
+          $('#vpnpm-edit-type').val((d.type || 'standard').toLowerCase());
         } else {
           alert((resp && resp.data && resp.data.message) || 'Failed to load profile.');
         }
@@ -129,12 +129,12 @@
     }
 
     $(document).on('click', '.vpnpm-edit-btn', function() {
-      const id = $(this).data('id');
-      openEditModal(id);
+      openEditModal($(this).data('id'));
     });
 
     // Close edit modal
     $(document).on('click', '.vpnpm-modal-close[data-close="edit"], #vpnpm-edit-modal .vpnpm-modal-backdrop[data-close="edit"]', function() {
+      $('#vpnpm-edit-modal').find(':focus').blur();
       $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
     });
 
@@ -152,7 +152,7 @@
         cipher: $('#vpnpm-edit-cipher').val(),
         status: $('#vpnpm-edit-status').val(),
         notes: $('#vpnpm-edit-notes').val(),
-        label: $('#vpnpm-edit-label').val() // Add label to payload
+        label: $('#vpnpm-edit-label').val()
       };
       $.ajax({
         url: vpnpmAjax.ajaxurl,
@@ -161,7 +161,6 @@
         data: payload
       }).done(function(resp) {
         if (resp && resp.success) {
-          // Update card UI
           const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + id + '"]').closest('.vpnpm-card');
           const d = resp.data;
           $card.find('p:contains("Host:")').html('Host: ' + (d.remote_host || ''));
@@ -170,15 +169,11 @@
           const statusMap = {active:'status-active', down:'status-offline', unknown:'status-unknown'};
           const s = (d.status || 'unknown').toLowerCase();
           $card.find('.vpnpm-status').removeClass('status-active status-offline status-unknown').addClass(statusMap[s] || 'status-unknown').text(s.charAt(0).toUpperCase() + s.slice(1));
-          // Update search haystack data attribute
-          const name = $card.find('h3').text();
-          const hay = (name + ' ' + (d.remote_host||'') + ' ' + (d.port||'') + ' ' + ((d.protocol||'').toUpperCase()) + ' ' + (s) + ' ' + (d.notes || '')).toLowerCase();
-          $card.attr('data-search', hay);
-          // Ensure notes are updated in the card after saving changes
           $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
           $card.find('p:contains("Label:")').html('Label: <span class="vpnpm-label ' + (d.label === 'premium' ? 'label-premium' : 'label-standard') + '">' + ((d.label && d.label.charAt(0).toUpperCase() + d.label.slice(1)) || 'N/A') + '</span>');
           $card.find('p:contains("Type:")').html('Type: <span class="vpnpm-type ' + (d.type === 'premium' ? 'type-premium' : 'type-standard') + '">' + ((d.type && d.type.charAt(0).toUpperCase() + d.type.slice(1)) || 'N/A') + '</span>');
           $card.find('.vpnpm-ping').text(d.ping !== null && d.ping !== undefined ? d.ping + ' ms' : 'N/A');
+          $('#vpnpm-edit-modal').find(':focus').blur();
           $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
         } else {
           alert((resp && resp.data && resp.data.message) || 'Update failed.');
@@ -188,222 +183,67 @@
       });
     });
 
-    // Live refresh server statuses every 30 seconds
-setInterval(function() {
-    $.ajax({
+    // Sorting + refresh logic (moved inside closure)
+    function timeAgo(date) {
+      const now = new Date();
+      const seconds = Math.floor((now - date) / 1000);
+      if (seconds < 60) return 'just now';
+      if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+      if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+      return Math.floor(seconds / 86400) + ' days ago';
+    }
+
+    const lastCheckedTimes = {};
+    function updateRelativeTimes() {
+      Object.entries(lastCheckedTimes).forEach(([id, lastChecked]) => {
+        const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + id + '"]').closest('.vpnpm-card');
+        if ($card.length) {
+          const $lastChecked = $card.find('.vpnpm-last-checked');
+          if ($lastChecked.length) {
+            const relative = timeAgo(new Date(lastChecked));
+            $lastChecked.text('Last checked: ' + relative);
+            $lastChecked.attr('title', new Date(lastChecked).toLocaleString());
+          }
+        }
+      });
+    }
+
+    setInterval(function() {
+      $.ajax({
         url: vpnpmAjax.ajaxurl,
         type: 'POST',
         dataType: 'json',
         data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce },
-    }).done(function(resp) {
-        if (resp && resp.success && Array.isArray(resp.servers)) {
-            resp.servers.forEach(function(server) {
-                const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
-                if (!$card.length) return;
+      }).done(function(resp) {
+        if (resp && resp.success) {
+          resp.servers.forEach(function(server) {
+            lastCheckedTimes[server.id] = server.last_checked;
+            const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
+            if (!$card.length) return;
 
-                // Update status
-                const $status = $card.find('.vpnpm-status');
-                $status.text(server.status.charAt(0).toUpperCase() + server.status.slice(1));
-                $status.removeClass('status-active status-offline status-unknown')
-                       .addClass('status-' + server.status);
+            const $status = $card.find('.vpnpm-status');
+            $status.text(server.status.charAt(0).toUpperCase() + server.status.slice(1));
+            $status.removeClass('status-active status-offline status-unknown')
+                   .addClass('status-' + server.status);
 
-                // Update ping and highlight changes
-                const $ping = $card.find('.vpnpm-ping'); // Use 'let' to avoid redeclaration issues
-                const newPing = server.ping !== null ? server.ping + ' ms' : 'N/A';
-                $ping.text(newPing);
+            const $ping = $card.find('.vpnpm-ping');
+            const oldPing = parseInt($ping.text(), 10);
+            if (server.ping !== null && oldPing !== server.ping) {
+              $ping.text(server.ping + ' ms').addClass('ping-changed');
+              setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
+            }
 
-                // Update last checked
-                const lastCheckedDate = new Date(server.last_checked);
-                const relative = timeAgo(lastCheckedDate);
-                $card.find('.vpnpm-last-checked')
-                    .text('Last checked: ' + relative)
-                    .attr('title', lastCheckedDate.toLocaleString());
-            });
-        }
-    });
-}, 30000); // 30 seconds
-
-// Sort servers by ping value: lowest to highest, then down servers
-function sortServersByPing() {
-  const $grid = $('#vpnpm-grid');
-  const $cards = $grid.children('.vpnpm-card');
-
-  $cards.sort(function(a, b) {
-    const statusA = $(a).find('.vpnpm-status').text().toLowerCase();
-    const statusB = $(b).find('.vpnpm-status').text().toLowerCase();
-
-    // Place down servers at the bottom
-    if (statusA === 'down' && statusB !== 'down') return 1;
-    if (statusA !== 'down' && statusB === 'down') return -1;
-
-    // Sort by ping value for active/unknown servers
-    const pingA = parseInt($(a).find('.vpnpm-ping').text()) || Infinity;
-    const pingB = parseInt($(b).find('.vpnpm-ping').text()) || Infinity;
-    return pingA - pingB;
-  });
-
-  $grid.append($cards); // Re-append sorted cards to the grid
-}
-
-// Call sortServersByPing after AJAX updates
-$(document).on('submit', '#vpnpm-edit-form', function(e) {
-  e.preventDefault();
-  const id = $('#vpnpm-edit-id').val();
-  const payload = {
-    action: 'vpnpm_update_profile',
-    _ajax_nonce: vpnpmAjax.nonce,
-    id: id,
-    remote_host: $('#vpnpm-edit-remote').val(),
-    port: $('#vpnpm-edit-port').val(),
-    protocol: $('#vpnpm-edit-protocol').val(),
-    cipher: $('#vpnpm-edit-cipher').val(),
-    status: $('#vpnpm-edit-status').val(),
-    notes: $('#vpnpm-edit-notes').val(),
-    label: $('#vpnpm-edit-label').val() // Add label to payload
-  };
-  $.ajax({
-    url: vpnpmAjax.ajaxurl,
-    type: 'POST',
-    dataType: 'json',
-    data: payload
-  }).done(function(resp) {
-    if (resp && resp.success) {
-      const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + id + '"]').closest('.vpnpm-card');
-      const d = resp.data;
-      $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
-      $card.find('.vpnpm-status').text(d.status.charAt(0).toUpperCase() + d.status.slice(1));
-      $card.find('.vpnpm-ping').text(d.ping !== null && d.ping !== undefined ? d.ping + ' ms' : 'N/A');
-      $card.find('p:contains("Label:")').html('Label: <span class="vpnpm-label ' + (d.label === 'premium' ? 'label-premium' : 'label-standard') + '">' + ((d.label && d.label.charAt(0).toUpperCase() + d.label.slice(1)) || 'N/A') + '</span>');
-      $card.find('p:contains("Type:")').html('Type: <span class="vpnpm-type ' + (d.type === 'premium' ? 'type-premium' : 'type-standard') + '">' + ((d.type && d.type.charAt(0).toUpperCase() + d.type.slice(1)) || 'N/A') + '</span>');
-      sortServersByPing(); // Sort servers after update
-      $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
-    } else {
-      alert((resp && resp.data && resp.data.message) || 'Update failed.');
-    }
-  }).fail(function() {
-    alert('Update failed.');
-  });
-});
-
-// Call sortServersByPing on page load
-$(document).ready(function() {
-  sortServersByPing();
-});
-  });
-})(jQuery);
-
-function timeAgo(date) {
-  const now = new Date();
-  const seconds = Math.floor((now - date) / 1000);
-
-  if (seconds < 60) return 'just now';
-  if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
-  if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
-  return Math.floor(seconds / 86400) + ' days ago';
-}
-// Store last_checked timestamps for each server by ID
-const lastCheckedTimes = {};
-
-// Update relative times every 30 seconds
-function updateRelativeTimes() {
-  Object.entries(lastCheckedTimes).forEach(([id, lastChecked]) => {
-    const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + id + '"]').closest('.vpnpm-card');
-    if ($card.length) {
-      const $lastChecked = $card.find('.vpnpm-last-checked');
-      if ($lastChecked.length) {
-        const relative = timeAgo(new Date(lastChecked));
-        $lastChecked.text('Last checked: ' + relative);
-        $lastChecked.attr('title', new Date(lastChecked).toLocaleString());
-      }
-    }
-  });
-}
-
-// Update lastCheckedTimes and UI during AJAX refresh
-setInterval(function() {
-  $.ajax({
-    url: vpnpmAjax.ajaxurl,
-    type: 'POST',
-    dataType: 'json',
-    data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce },
-  }).done(function(resp) {
-    if (resp && resp.success) {
-      resp.servers.forEach(function(server) {
-        lastCheckedTimes[server.id] = server.last_checked;
-
-        const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
-        if (!$card.length) return;
-
-        // Update status
-        const $status = $card.find('.vpnpm-status');
-        $status.text(server.status.charAt(0).toUpperCase() + server.status.slice(1));
-        $status.removeClass('status-active status-offline status-unknown')
-               .addClass('status-' + server.status);
-
-        // Update ping and highlight changes
-        const $ping = $card.find('.vpnpm-ping');
-        const oldPing = parseInt($ping.text(), 10);
-        if (server.ping !== null && oldPing !== server.ping) {
-          $ping.text(server.ping + ' ms').addClass('ping-changed');
-          setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
-        }
-
-        // Update relative last checked text immediately
-        const $lastChecked = $card.find('.vpnpm-last-checked');
-        if ($lastChecked.length) {
-          const relative = timeAgo(new Date(server.last_checked));
-          $lastChecked.text('Last checked: ' + relative);
-          $lastChecked.attr('title', new Date(server.last_checked).toLocaleString());
+            const $lastChecked = $card.find('.vpnpm-last-checked');
+            if ($lastChecked.length) {
+              const relative = timeAgo(new Date(server.last_checked));
+              $lastChecked.text('Last checked: ' + relative);
+              $lastChecked.attr('title', new Date(server.last_checked).toLocaleString());
+            }
+          });
         }
       });
-    }
+    }, 30000);
+
+    setInterval(updateRelativeTimes, 30000);
   });
-}, 30000);
-
-// Also run relative time updater every 30 seconds to keep time updated without reload
-setInterval(updateRelativeTimes, 30000);
-
-// Your existing timeAgo function here...
-if (typeof vpnpmAjax !== 'undefined') {
-  setInterval(function() {
-    $.ajax({
-      url: vpnpmAjax.ajaxurl,
-      type: 'POST',
-      dataType: 'json',
-      data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce },
-    }).done(function(resp) {
-      if (resp && resp.success) {
-        resp.servers.forEach(function(server) {
-          lastCheckedTimes[server.id] = server.last_checked;
-
-          const $card = $('.vpnpm-card .vpnpm-test-btn[data-id="' + server.id + '"]').closest('.vpnpm-card');
-          if (!$card.length) return;
-
-          // Update status
-          const $status = $card.find('.vpnpm-status');
-          $status.text(server.status.charAt(0).toUpperCase() + server.status.slice(1));
-          $status.removeClass('status-active status-offline status-unknown')
-                 .addClass('status-' + server.status);
-
-          // Update ping and highlight changes
-          const $ping = $card.find('.vpnpm-ping');
-          const oldPing = parseInt($ping.text(), 10);
-          if (server.ping !== null && oldPing !== server.ping) {
-            $ping.text(server.ping + ' ms').addClass('ping-changed');
-            setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
-          }
-
-          // Update relative last checked text immediately
-          const $lastChecked = $card.find('.vpnpm-last-checked');
-          if ($lastChecked.length) {
-            const relative = timeAgo(new Date(server.last_checked));
-            $lastChecked.text('Last checked: ' + relative);
-            $lastChecked.attr('title', new Date(server.last_checked).toLocaleString());
-          }
-        });
-      }
-    });
-  }, 30000);
-} else {
-  console.error('vpnpmAjax is not defined.');
-}
+})(jQuery);
