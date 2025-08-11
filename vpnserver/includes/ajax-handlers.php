@@ -143,6 +143,7 @@ function vpnpm_ajax_get_profile() {
 		'status' => $p->status,
 		'notes' => $p->notes,
 		'label' => $p->label ?? 'standard', // Add label field
+        'type' => $p->type ?? 'standard',
 		'last_checked' => $p->last_checked,
 	]);
 }
@@ -156,6 +157,10 @@ function vpnpm_ajax_update_profile() {
 	wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
 	}
 	check_ajax_referer('vpnpm-nonce');
+    $type = isset($_POST['type']) ? sanitize_text_field(wp_unslash($_POST['type'])) : 'standard';
+    if (!in_array(strtolower($type), ['standard','premium'], true)) {
+        $type = 'standard';
+    }
 	$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 	if (!$id) wp_send_json_error(['message' => __('Invalid ID', 'vpnserver')], 400);
 
@@ -167,6 +172,7 @@ function vpnpm_ajax_update_profile() {
 		'status'      => isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : null,
 		'notes'       => isset($_POST['notes']) ? sanitize_textarea_field(wp_unslash($_POST['notes'])) : null,
 		'label'       => isset($_POST['label']) ? sanitize_text_field(wp_unslash($_POST['label'])) : 'standard', // Add label field
+        'type'        => $type,
 	];
 	// remove nulls
 	$data = array_filter($data, function($v){ return $v !== null; });
@@ -192,6 +198,7 @@ function vpnpm_ajax_update_profile() {
 		'status' => $p->status,
 		'notes' => $p->notes,
 		'label' => $p->label ?? 'standard', // Add label field
+        'type' => $p->type ?? 'standard',
 		'last_checked' => $p->last_checked,
 	]);
 }
