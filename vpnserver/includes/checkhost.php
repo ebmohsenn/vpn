@@ -3,6 +3,18 @@ defined('ABSPATH') || exit;
 
 // Check-Host API client and processing utilities (official endpoints)
 
+// Cooldown helpers to avoid hammering when blocked (403)
+if (!function_exists('vpnpm_checkhost_is_blocked')):
+function vpnpm_checkhost_is_blocked() {
+    return (bool) get_transient('vpnpm_checkhost_cooldown');
+}
+endif;
+if (!function_exists('vpnpm_checkhost_mark_blocked')):
+function vpnpm_checkhost_mark_blocked($minutes = 60) {
+    set_transient('vpnpm_checkhost_cooldown', 1, max(60, $minutes * MINUTE_IN_SECONDS));
+}
+endif;
+
 if (!function_exists('vpnpm_checkhost_curated_nodes')):
 function vpnpm_checkhost_curated_nodes() {
     // Curated defaults: host => label
@@ -91,6 +103,9 @@ if (!function_exists('vpnpm_checkhost_initiate_ping')):
  * Returns: [array $init|false, string|null $error]
  */
 function vpnpm_checkhost_initiate_ping($target, array $nodes = [], $max_nodes = null) {
+    if (vpnpm_checkhost_is_blocked()) {
+        return [false, 'Check-Host temporarily disabled due to previous 403 (cooldown active).'];
+    }
     $endpoint = 'https://check-host.net/check-ping';
     // Build body with repeated node= parameters (official style)
     $pairs = [ 'host=' . rawurlencode($target) ];
@@ -108,11 +123,13 @@ function vpnpm_checkhost_initiate_ping($target, array $nodes = [], $max_nodes = 
         error_log('[vpnserver] Check-Host API request: ' . $endpoint . ' BODY: ' . $body);
     }
     $headers = [
-        'Content-Type'    => 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Accept'          => 'application/json, */*;q=0.8',
-        'User-Agent'      => 'VPNServerManager/1.0 (+https://wordpress.org; WP ' . get_bloginfo('version') . ')',
-        'Referer'         => 'https://check-host.net/',
-        'Accept-Language' => get_locale() ? str_replace('_', '-', get_locale()) . ',en;q=0.8' : 'en-US,en;q=0.8',
+        'Content-Type'      => 'application/x-www-form-urlencoded; charset=UTF-8',
+        'Accept'            => 'application/json, */*;q=0.8',
+        'User-Agent'        => 'VPNServerManager/1.0 (+https://wordpress.org; WP ' . get_bloginfo('version') . ')',
+        'Referer'           => 'https://check-host.net/',
+        'Origin'            => 'https://check-host.net',
+        'X-Requested-With'  => 'XMLHttpRequest',
+        'Accept-Language'   => get_locale() ? str_replace('_', '-', get_locale()) . ',en;q=0.8' : 'en-US,en;q=0.8',
     ];
     $response = wp_remote_post($endpoint, [
         'timeout' => 15,
@@ -138,6 +155,9 @@ function vpnpm_checkhost_initiate_ping($target, array $nodes = [], $max_nodes = 
         $code = wp_remote_retrieve_response_code($response);
         if ($code !== 200) {
             $snippet = substr((string) wp_remote_retrieve_body($response), 0, 200);
+            if ($code === 403) {
+                vpnpm_checkhost_mark_blocked(60);
+            }
             return [false, 'HTTP ' . $code . ($snippet ? ' Body: ' . $snippet : '')];
         }
     }
@@ -163,16 +183,21 @@ if (!function_exists('vpnpm_checkhost_poll_result')):
 function vpnpm_checkhost_poll_result($request_id) {
     $url = sprintf('https://check-host.net/check-result/%s', rawurlencode($request_id));
     $headers = [
-        'Accept'          => 'application/json, */*;q=0.8',
-        'User-Agent'      => 'VPNServerManager/1.0 (+https://wordpress.org; WP ' . get_bloginfo('version') . ')',
-        'Referer'         => 'https://check-host.net/',
-        'Accept-Language' => get_locale() ? str_replace('_', '-', get_locale()) . ',en;q=0.8' : 'en-US,en;q=0.8',
+        'Accept'            => 'application/json, */*;q=0.8',
+        'User-Agent'        => 'VPNServerManager/1.0 (+https://wordpress.org; WP ' . get_bloginfo('version') . ')',
+        'Referer'           => 'https://check-host.net/',
+        'Origin'            => 'https://check-host.net',
+        'X-Requested-With'  => 'XMLHttpRequest',
+        'Accept-Language'   => get_locale() ? str_replace('_', '-', get_locale()) . ',en;q=0.8' : 'en-US,en;q=0.8',
     ];
     $resp = wp_remote_get($url, ['timeout' => 15, 'headers' => $headers]);
     if (is_wp_error($resp)) return [false, $resp->get_error_message()];
     $code = wp_remote_retrieve_response_code($resp);
     if ($code !== 200) {
         $snippet = substr((string) wp_remote_retrieve_body($resp), 0, 200);
+        if ($code === 403) {
+            vpnpm_checkhost_mark_blocked(60);
+        }
         return [false, 'HTTP ' . $code . ($snippet ? ' Body: ' . $snippet : '')];
     }
     $data = json_decode(wp_remote_retrieve_body($resp), true);

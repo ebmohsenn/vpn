@@ -238,7 +238,7 @@ function vpnpm_render_dashboard_widget() {
 // Add custom cron interval for 10 minutes
 add_filter('cron_schedules', 'vpnpm_add_cron_interval');
 function vpnpm_add_cron_interval($schedules) {
-    $schedules['fifteen_minutes'] = [
+    $schedules['ten_minutes'] = [
         'interval' => 600, // 10 minutes in seconds
         'display'  => __('Every 10 Minutes', 'vpnserver')
     ];
@@ -249,7 +249,7 @@ function vpnpm_add_cron_interval($schedules) {
 register_activation_hook(__FILE__, 'vpnpm_schedule_cron');
 function vpnpm_schedule_cron() {
     if (!wp_next_scheduled('vpnpm_test_all_servers_cron')) {
-        wp_schedule_event(time(), 'ten_minutes', 'vpnpm_test_all_servers_cron');
+    wp_schedule_event(time(), 'ten_minutes', 'vpnpm_test_all_servers_cron');
     }
 }
 
