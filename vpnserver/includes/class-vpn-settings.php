@@ -42,7 +42,7 @@ class Vpnpm_Settings {
         add_submenu_page(
             'vpn-manager',
             __('VPN Manager Settings', 'vpnserver'),
-            __('Settings', 'vpnserver'),
+            __('Plugin Settings', 'vpnserver'),
             $cap,
             'vpn-manager-settings',
             [$this, 'render_settings_page']

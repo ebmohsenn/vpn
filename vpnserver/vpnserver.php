@@ -250,9 +250,9 @@ add_action('vpnpm_test_all_servers_cron', 'vpnpm_test_all_servers');
 function vpnpm_test_all_servers() {
     global $wpdb;
     $table = $wpdb->prefix . 'vpn_profiles';
-    $servers = $wpdb->get_results("SELECT id, remote_host, port FROM {$table}");
+    $servers = $wpdb->get_results("SELECT id, file_name, remote_host, port, status, ping, type FROM {$table}");
 
-    $lines = [];
+    // Update statuses and pings
     foreach ($servers as $server) {
         $ping = vpnpm_get_server_ping($server->remote_host, $server->port);
         $status = $ping !== false ? 'active' : 'down';
@@ -270,26 +270,31 @@ function vpnpm_test_all_servers() {
             ['%d']
         );
 
-        $lines[] = sprintf('#%d | status: %s | ping: %s', (int) $server->id, $status, ($ping !== false ? ($ping . ' ms') : 'N/A'));
+        // Update in-memory for summary
+        $server->status = $status;
+        $server->ping = $ping !== false ? $ping : null;
     }
 
-    // Respect settings: send telegram only if enabled and if any lines
-    if (!empty($lines) && class_exists('Vpnpm_Settings')) {
+    // Fetch updated servers for summary
+    $rows = $wpdb->get_results("SELECT file_name, status, ping, type FROM {$table}");
+    $servers_arr = [];
+    foreach ($rows as $row) {
+        $servers_arr[] = [
+            'name' => esc_html(pathinfo((string)$row->file_name, PATHINFO_FILENAME)),
+            'status' => esc_html(strtolower((string)$row->status)),
+            'ping' => $row->ping !== null ? (int)$row->ping : null,
+            'type' => isset($row->type) ? esc_html($row->type) : 'Standard',
+        ];
+    }
+
+    // Respect settings: send telegram only if enabled and if any servers
+    if (!empty($servers_arr) && class_exists('Vpnpm_Settings')) {
         $opts = Vpnpm_Settings::get_settings();
         if (!empty($opts['enable_telegram'])) {
-            $title = 'VPN Status Update - ' . date_i18n('Y-m-d H:i');
-            $summary = $title . "\n" . implode("\n", $lines);
-
-            // If multiple chat IDs configured, temporarily override constant-based chat ID
-            $idsCsv = isset($opts['telegram_chat_ids']) ? (string) $opts['telegram_chat_ids'] : '';
-            $ids = array_filter(array_map('trim', explode(',', $idsCsv)));
-            if ($ids) {
-                foreach ($ids as $id) {
-                    vpnpm_send_telegram_message($summary, $id);
-                }
-            } else {
-                vpnpm_send_telegram_message($summary);
-            }
+            $msg = function_exists('vpnpm_format_vpn_status_message_stylish')
+                ? vpnpm_format_vpn_status_message_stylish($servers_arr)
+                : 'VPN Status update.';
+            vpnpm_send_telegram_message($msg, null, 'MarkdownV2');
         }
     }
 }

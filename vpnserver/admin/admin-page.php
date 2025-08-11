@@ -32,9 +32,7 @@ function vpnpm_admin_page() {
 		<div class="vpn-header">
 			<h1>VPN Manager</h1>
 			<div>
-				<a class="vpn-btn" href="<?php echo esc_url( admin_url('admin.php?page=vpn-manager-settings') ); ?>">Settings</a>
 				<button class="vpn-btn vpn-btn-primary" id="vpnpm-add-server-btn">+ Add Server</button>
-				<button class="vpn-btn vpn-btn-secondary" id="vpnpm-telegram-test" type="button" aria-label="Send Telegram test message">Send Telegram Test</button>
 				<input type="text" class="vpn-search" id="vpnpm-search" placeholder="Search servers..." aria-label="Search servers" />
 			</div>
 		</div>
