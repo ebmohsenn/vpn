@@ -288,6 +288,9 @@ function vpnpm_test_all_servers() {
             $avg = null; $raw = null; $status = 'down';
             if (!$recent) {
                 list($init, $err) = vpnpm_checkhost_initiate_ping($server->remote_host, $nodes);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('[vpnserver] Cron: Check-Host initiate result: ' . print_r($init, true) . ' error: ' . print_r($err, true));
+                }
                 if ($init && isset($init['request_id'])) {
                     $request_id = $init['request_id'];
                     $attempts = 0; $max_attempts = 8; // ~ a few seconds total
@@ -295,12 +298,19 @@ function vpnpm_test_all_servers() {
                         vpnpm_checkhost_rate_limit_sleep();
                         list($res, $perr) = vpnpm_checkhost_poll_result($request_id);
                         $attempts++;
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('[vpnserver] Cron: Poll attempt ' . $attempts . ' result: ' . print_r($res, true) . ' error: ' . print_r($perr, true));
+                        }
                         if ($res && is_array($res)) {
                             $raw = $res;
                             $avg = vpnpm_checkhost_aggregate_ping_ms($res);
                             // Some nodes may yet be pending; break if we have at least something
                             if ($avg !== null || $attempts >= $max_attempts) {
                                 break;
+                            }
+                        } elseif ($perr) {
+                            if (function_exists('vpnpm_store_checkhost_error')) {
+                                vpnpm_store_checkhost_error($server->id, $perr);
                             }
                         }
                     } while ($attempts < $max_attempts);
@@ -313,7 +323,11 @@ function vpnpm_test_all_servers() {
                 if ($avg !== null || $raw !== null) {
                     vpnpm_store_checkhost_result($server->id, $avg, $raw);
                 } elseif (function_exists('vpnpm_store_checkhost_error')) {
-                    vpnpm_store_checkhost_error($server->id, isset($perr) && $perr ? $perr : ($err ?: 'No data from Check-Host'));
+                    $errMsg = isset($perr) && $perr ? $perr : ($err ?: 'No data from Check-Host');
+                    if (empty($errMsg) && is_array($raw) && empty($raw)) {
+                        $errMsg = 'Check-Host returned empty result.';
+                    }
+                    vpnpm_store_checkhost_error($server->id, $errMsg);
                 }
             } else {
                 // Leave existing value as-is, fetch for telegram summary

@@ -108,8 +108,10 @@ $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 							<?php
 							if ($server->checkhost_ping_avg !== null) {
 								echo esc_html((int)$server->checkhost_ping_avg) . ' ms';
-							} elseif ($chErr) {
-								echo esc_html__('Error', 'vpnserver');
+							} elseif (!empty($server->checkhost_last_error)) {
+								echo esc_html__('Error: ', 'vpnserver') . esc_html($server->checkhost_last_error);
+							} elseif (empty($server->checkhost_ping_json) || !is_array(json_decode($server->checkhost_ping_json, true))) {
+								echo esc_html__('No valid data', 'vpnserver');
 							} else {
 								echo esc_html__('No data', 'vpnserver');
 							}
