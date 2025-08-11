@@ -223,6 +223,10 @@ class Vpnpm_Settings {
         do_settings_sections('vpnpm_settings_page');
         submit_button();
         echo '</form>';
+    // Test Telegram Notification button
+    echo '<hr/>';
+    echo '<div id="vpnpm-settings-msg" aria-live="polite"></div>';
+    echo '<p><button type="button" class="button" id="vpnpm-settings-telegram-test">' . esc_html__('Send Test Telegram Notification', 'vpnserver') . '</button></p>';
         echo '</div>';
     }
 

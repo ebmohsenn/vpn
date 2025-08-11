@@ -1,5 +1,29 @@
 (function($) {
   $(function() {
+    // Settings: Send Test Telegram Notification
+    $(document).on('click', '#vpnpm-settings-telegram-test', function() {
+      const $btn = $(this);
+      const $msg = $('#vpnpm-settings-msg');
+      const original = $btn.text();
+      $btn.prop('disabled', true).text('Sending...');
+      $.ajax({
+        url: vpnpmAjax.ajaxurl,
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'vpnpm_send_telegram_test', _ajax_nonce: vpnpmAjax.nonce }
+      }).done(function(resp){
+        if (resp && resp.success) {
+          $msg.text(resp.data && resp.data.message ? resp.data.message : 'Message sent.').removeClass('notice-error').addClass('notice notice-success');
+        } else {
+          const m = resp && resp.data && resp.data.message ? resp.data.message : 'Send failed.';
+          $msg.text(m).removeClass('notice-success').addClass('notice notice-error');
+        }
+      }).fail(function(){
+        $msg.text('Send failed.').removeClass('notice-success').addClass('notice notice-error');
+      }).always(function(){
+        setTimeout(function(){ $btn.prop('disabled', false).text(original); }, 1200);
+      });
+    });
     // Telegram Test button
     $(document).on('click', '#vpnpm-telegram-test', function() {
       const $btn = $(this);

@@ -63,7 +63,7 @@ function vpnserver_add_admin_menu() {
 add_action('admin_enqueue_scripts', 'vpnserver_admin_assets');
 function vpnserver_admin_assets($hook) {
     // Ensure scripts load on our admin page and its subpages
-    if (strpos((string)$hook, 'vpn-manager') === false) {
+    if (strpos((string)$hook, 'vpn-manager') === false && strpos((string)$hook, 'settings_page_vpn-manager-settings') === false) {
         return;
     }
     $css_rel = 'assets/css/admin.css';

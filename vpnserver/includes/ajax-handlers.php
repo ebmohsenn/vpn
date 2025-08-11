@@ -10,11 +10,22 @@ function vpnpm_ajax_send_telegram_test() {
 	}
 	check_ajax_referer('vpnpm-nonce');
 
-	$when = date_i18n('Y-m-d H:i:s');
-	$ok = function_exists('vpnpm_send_telegram_message')
-		? vpnpm_send_telegram_message("VPN Server Manager test message: " . $when)
-		: false;
+	global $wpdb;
+	$table = $wpdb->prefix . 'vpn_profiles';
+	// Fetch name (from file_name), status, ping, and type
+	$rows = $wpdb->get_results("SELECT id, file_name, status, ping, type FROM {$table} ORDER BY id ASC");
+	$lines = [];
+	foreach ((array)$rows as $r) {
+		$name = esc_html(pathinfo((string)$r->file_name, PATHINFO_FILENAME));
+		$status = esc_html(strtolower((string)$r->status));
+		$ping = $r->ping !== null ? ((int)$r->ping . ' ms') : 'N/A';
+		$type = isset($r->type) ? esc_html(ucfirst(strtolower((string)$r->type))) : 'Standard';
+		$lines[] = sprintf('%s (#%d) | %s | %s | %s', $name, (int)$r->id, ucfirst($status), $ping, $type);
+	}
+	$title = 'VPN Status (Test) - ' . date_i18n('Y-m-d H:i');
+	$summary = $title . "\n" . ($lines ? implode("\n", $lines) : 'No servers found.');
 
+	$ok = function_exists('vpnpm_send_telegram_message') ? vpnpm_send_telegram_message($summary) : false;
 	if ($ok) {
 		wp_send_json_success(['message' => __('Telegram message sent.', 'vpnserver')]);
 	}
