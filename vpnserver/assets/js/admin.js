@@ -88,7 +88,7 @@
         const last = resp && resp.success ? (resp.data.last_checked || '') : '';
         let $last = $card.find('.vpnpm-last-checked');
         if (!$last.length) $last = $('<small class="vpnpm-last-checked" />').appendTo($status.parent());
-        if (last) $last.text('Last checked: ' + last);
+  if (last) $last.text('Last checked: ' + last.replace(/^Last checked:\s*/i, ''));
 
   const $ping = $card.find('.vpnpm-ping-server');
         const newPing = resp && resp.success ? resp.data.ping : null;
@@ -135,7 +135,8 @@
               const err = resp.data && resp.data.ch_error;
               if (err) {
                 $ch.attr('title', err);
-                if (!$ch.next('.ch-error-flag').length) {
+                const $next = $ch.next('.ch-error-flag');
+                if (!$next.length) {
                   $ch.after('<small class="ch-error-flag" style="color:#d63638;"> (error)</small>');
                 }
               } else {
