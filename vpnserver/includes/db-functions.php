@@ -23,6 +23,8 @@ function vpnpm_create_tables() {
 		cipher varchar(100) DEFAULT NULL,
 		status varchar(20) DEFAULT 'unknown',
 		ping int(11) DEFAULT NULL,
+		type varchar(20) DEFAULT 'standard',
+		label varchar(20) DEFAULT 'standard',
 		notes text NULL,
 		last_checked datetime DEFAULT NULL,
 		created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -35,10 +37,30 @@ function vpnpm_create_tables() {
 }
 endif;
 
+// Ensure new columns exist on runtime (safe no-op if already present)
+if (!function_exists('vpnpm_ensure_schema')):
+function vpnpm_ensure_schema() {
+	global $wpdb;
+	$table = vpnpm_table_name();
+	// Check 'type'
+	$has_type = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", 'type'));
+	if (!$has_type) {
+		$wpdb->query("ALTER TABLE {$table} ADD COLUMN type varchar(20) DEFAULT 'standard' AFTER ping");
+	}
+	// Check 'label'
+	$has_label = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", 'label'));
+	if (!$has_label) {
+		$wpdb->query("ALTER TABLE {$table} ADD COLUMN label varchar(20) DEFAULT 'standard' AFTER type");
+	}
+}
+endif;
+
 if (!function_exists('vpnpm_insert_profile')):
 function vpnpm_insert_profile($data) {
 	global $wpdb;
 	$table = vpnpm_table_name();
+
+    vpnpm_ensure_schema();
 
 	$defaults = [
 		'file_name'   => '',
@@ -47,6 +69,8 @@ function vpnpm_insert_profile($data) {
 		'protocol'    => null,
 		'cipher'      => null,
 		'status'      => 'unknown',
+		'type'        => 'standard',
+		'label'       => 'standard',
 		'notes'       => null,
 		'last_checked'=> null,
 		'created_at'  => current_time('mysql')
@@ -63,6 +87,8 @@ function vpnpm_insert_profile($data) {
 			'%s', // protocol
 			'%s', // cipher
 			'%s', // status
+			'%s', // type
+			'%s', // label
 			'%s', // notes
 			'%s', // last_checked
 			'%s', // created_at
@@ -80,7 +106,8 @@ if (!function_exists('vpnpm_get_all_profiles')):
 function vpnpm_get_all_profiles() {
 	global $wpdb;
 	$table = vpnpm_table_name();
-	return $wpdb->get_results("SELECT id, file_name, remote_host, port, protocol, status, ping, last_checked FROM {$table}");
+	vpnpm_ensure_schema();
+	return $wpdb->get_results("SELECT id, file_name, remote_host, port, protocol, status, ping, type, label, last_checked FROM {$table}");
 }
 endif;
 
@@ -88,6 +115,7 @@ if (!function_exists('vpnpm_get_profile_by_id')):
 function vpnpm_get_profile_by_id($id) {
 	global $wpdb;
 	$table = vpnpm_table_name();
+	vpnpm_ensure_schema();
 	return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $id));
 }
 endif;
@@ -122,7 +150,9 @@ function vpnpm_update_profile($id, $data) {
 	global $wpdb;
 	$table = vpnpm_table_name();
 
-	$allowed = ['file_name','remote_host','port','protocol','cipher','status','notes'];
+    vpnpm_ensure_schema();
+
+	$allowed = ['file_name','remote_host','port','protocol','cipher','status','notes','type','label'];
 	$update_data = [];
 	$formats = [];
 	foreach ($allowed as $key) {

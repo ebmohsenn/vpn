@@ -196,9 +196,10 @@ function vpnpm_ajax_update_profile() {
 		'protocol' => $p->protocol,
 		'cipher' => $p->cipher,
 		'status' => $p->status,
+		'ping' => isset($p->ping) ? (int)$p->ping : null,
 		'notes' => $p->notes,
 		'label' => $p->label ?? 'standard', // Add label field
-        'type' => $p->type ?? 'standard',
+		'type' => $p->type ?? 'standard',
 		'last_checked' => $p->last_checked,
 	]);
 }
