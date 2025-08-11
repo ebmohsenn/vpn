@@ -3,15 +3,15 @@
     // ...existing code...
 
     // Settings: Load Check-Host Nodes dynamically
-    $(document).on('click', '#vpnsm-load-nodes-btn', function() {
+  $(document).on('click', '#vpnsm-load-nodes-btn', function() {
       var $btn = $(this);
       var $list = $('#vpnsm-nodes-list');
       $btn.prop('disabled', true).text('Loading...');
       $.ajax({
-        url: ajaxurl,
+    url: (typeof vpnpmAjax !== 'undefined' ? vpnpmAjax.ajaxurl : ajaxurl),
         type: 'GET',
         dataType: 'json',
-        data: { action: 'vpnsm_refresh_nodes', _wpnonce: $btn.data('nonce') || '' },
+    data: { action: 'vpnsm_refresh_nodes', _wpnonce: ($btn.data('nonce') || (window.vpnpmAjax && vpnpmAjax.nodesNonce) || '') },
       }).done(function(resp) {
         $list.empty();
         if (resp && resp.nodes) {

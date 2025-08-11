@@ -175,9 +175,11 @@ function vpnpm_ajax_test_server_checkhost() {
 	if (!function_exists('vpnpm_checkhost_initiate_ping')) {
 		wp_send_json_error(['message' => __('Check-Host integration not available.', 'vpnserver')], 500);
 	}
-	$opts = class_exists('Vpnpm_Settings') ? Vpnpm_Settings::get_settings() : [];
-	$node_str = isset($opts['checkhost_nodes']) ? (string)$opts['checkhost_nodes'] : '';
-	$nodes = array_values(array_filter(array_map('trim', explode(',', $node_str))));
+	// Use selected official nodes from settings (array of hostnames)
+	$nodes = get_option('vpnsm_checkhost_nodes', []);
+	if (!is_array($nodes) || empty($nodes)) {
+		$nodes = ['de-fra01.check-host.net', 'us-nyc01.check-host.net']; // fallback
+	}
 
 	// Initiate and poll
 	list($init, $err) = vpnpm_checkhost_initiate_ping($profile->remote_host, $nodes);

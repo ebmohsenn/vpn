@@ -27,6 +27,7 @@ require_once VPNSERVER_PLUGIN_DIR . 'includes/helpers.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/class-vpn-settings.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/ajax-handlers.php';
 require_once VPNSERVER_PLUGIN_DIR . 'admin/admin-page.php';
+require_once VPNSERVER_PLUGIN_DIR . 'admin/settings-page.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/vpn-telegram-functions.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/checkhost.php';
 
@@ -66,7 +67,7 @@ function vpnserver_admin_assets($hook) {
     // Ensure scripts load on our admin page and its subpages
     if (
         strpos((string)$hook, 'vpmgr') === false
-        && strpos((string)$hook, 'settings_page_vpn-manager-settings') === false
+        && strpos((string)$hook, 'settings_page_vpnsm-settings') === false
     ) {
         return;
     }
@@ -100,6 +101,7 @@ function vpnserver_admin_assets($hook) {
     $data = [
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce'   => wp_create_nonce('vpnpm-nonce'),
+        'nodesNonce' => wp_create_nonce('vpnsm_refresh_nodes'),
         'strings' => [
             'testing' => __('Testing...', 'vpnserver'),
             'tested'  => __('Tested', 'vpnserver'),

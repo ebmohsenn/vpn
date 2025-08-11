@@ -1,52 +1,47 @@
-// Register settings and validation for Check-Host nodes
+<?php
+defined('ABSPATH') || exit;
+
+// Settings and AJAX for official Check-Host nodes
 add_action('admin_init', function() {
 	register_setting('vpnsm_settings', 'vpnsm_checkhost_nodes', [
 		'type' => 'array',
 		'sanitize_callback' => function($input) {
 			$nodes = function_exists('vpnsm_get_checkhost_nodes') ? vpnsm_get_checkhost_nodes() : [];
 			if (!is_array($input)) $input = [];
-			// Only allow official hostnames
 			return array_values(array_intersect($input, array_keys($nodes)));
 		},
 		'default' => [],
 	]);
 });
 
-// AJAX handler to refresh nodes list
 add_action('wp_ajax_vpnsm_refresh_nodes', function() {
 	check_ajax_referer('vpnsm_refresh_nodes');
 	$nodes = function_exists('vpnsm_get_checkhost_nodes') ? vpnsm_get_checkhost_nodes(true) : [];
 	$selected = get_option('vpnsm_checkhost_nodes', []);
 	wp_send_json(['nodes' => $nodes, 'selected' => $selected]);
 });
-/**
- * Fetch and cache the official Check-Host nodes list.
- * Returns associative array: hostname => 'Country - City'.
- * Falls back to a static curated list if API fails.
- */
+
 function vpnsm_get_checkhost_nodes($force_refresh = false) {
 	$transient_key = 'vpnsm_checkhost_nodes';
 	$cached = get_transient($transient_key);
 	if ($cached && !$force_refresh) {
 		return $cached;
 	}
-
 	$api_url = 'https://check-host.net/nodes/hosts';
-	$response = wp_remote_get($api_url, ['timeout' => 10]);
+	$response = wp_remote_get($api_url, ['timeout' => 12]);
 	$nodes = [];
 	if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
 		$json = json_decode(wp_remote_retrieve_body($response), true);
 		if (is_array($json)) {
 			foreach ($json as $host => $info) {
-				if (!empty($info['country']) && !empty($info['city'])) {
-					$label = $info['country'] . ' - ' . $info['city'];
-					$nodes[$host] = $label;
+				$country = is_array($info) && isset($info['country']) ? trim((string)$info['country']) : '';
+				$city    = is_array($info) && isset($info['city']) ? trim((string)$info['city']) : '';
+				if ($host && $country && $city) {
+					$nodes[$host] = $country . ' - ' . $city;
 				}
 			}
 		}
 	}
-
-	// Fallback to static curated list if API fails or returns empty
 	if (empty($nodes)) {
 		$nodes = [
 			'de-fra01.check-host.net' => 'Germany - Frankfurt',
@@ -58,12 +53,9 @@ function vpnsm_get_checkhost_nodes($force_refresh = false) {
 			'jp-tyo01.check-host.net' => 'Japan - Tokyo',
 		];
 	}
-
 	set_transient($transient_key, $nodes, 12 * HOUR_IN_SECONDS);
 	return $nodes;
 }
-<?php
-defined('ABSPATH') || exit;
 
 if (!function_exists('vpnpm_get_upload_dir')):
 function vpnpm_get_upload_dir() {
