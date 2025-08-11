@@ -10,10 +10,15 @@ class Vpnpm_Settings {
     const OPTION = 'vpnpm_settings';
 
     public function __construct() {
-        add_action('admin_menu', [$this, 'add_menu']);
+        // Run after the parent menu is registered to avoid access glitches
+        add_action('admin_menu', [$this, 'add_menu'], 30);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('init', [__CLASS__, 'maybe_schedule']);
         add_filter('cron_schedules', [__CLASS__, 'register_cron_schedules']);
+    }
+
+    public static function capability() {
+        return apply_filters('vpnpm_settings_cap', 'manage_options');
     }
 
     public static function defaults() {
@@ -32,11 +37,21 @@ class Vpnpm_Settings {
     }
 
     public function add_menu() {
+        $cap = self::capability();
         add_submenu_page(
             'vpn-manager',
             __('VPN Manager Settings', 'vpnserver'),
             __('Settings', 'vpnserver'),
-            'manage_options',
+            $cap,
+            'vpn-manager-settings',
+            [$this, 'render_settings_page']
+        );
+
+        // Also expose under Settings to ensure accessibility even if parent menu is filtered
+        add_options_page(
+            __('VPN Manager Settings', 'vpnserver'),
+            __('VPN Manager', 'vpnserver'),
+            $cap,
             'vpn-manager-settings',
             [$this, 'render_settings_page']
         );
@@ -170,7 +185,7 @@ class Vpnpm_Settings {
     }
 
     public function render_settings_page() {
-        if (!current_user_can('manage_options')) return;
+    if (!current_user_can(self::capability())) return;
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('VPN Manager Settings', 'vpnserver') . '</h1>';
         echo '<form method="post" action="options.php">';
