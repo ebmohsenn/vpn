@@ -152,7 +152,8 @@
         cipher: $('#vpnpm-edit-cipher').val(),
         status: $('#vpnpm-edit-status').val(),
         notes: $('#vpnpm-edit-notes').val(),
-        label: $('#vpnpm-edit-label').val()
+        label: $('#vpnpm-edit-label').val(),
+        type: $('#vpnpm-edit-type').val()
       };
       $.ajax({
         url: vpnpmAjax.ajaxurl,
@@ -171,7 +172,8 @@
           $card.find('.vpnpm-status').removeClass('status-active status-offline status-unknown').addClass(statusMap[s] || 'status-unknown').text(s.charAt(0).toUpperCase() + s.slice(1));
           $card.find('p:contains("Notes:")').html('Notes: ' + (d.notes || 'No notes available'));
           $card.find('p:contains("Label:")').html('Label: <span class="vpnpm-label ' + (d.label === 'premium' ? 'label-premium' : 'label-standard') + '">' + ((d.label && d.label.charAt(0).toUpperCase() + d.label.slice(1)) || 'N/A') + '</span>');
-          $card.find('p:contains("Type:")').html('Type: <span class="vpnpm-type ' + (d.type === 'premium' ? 'type-premium' : 'type-standard') + '">' + ((d.type && d.type.charAt(0).toUpperCase() + d.type.slice(1)) || 'N/A') + '</span>');
+          var newType = (d && d.type) ? d.type : (payload.type || 'standard');
+          $card.find('p:contains("Type:")').html('Type: <span class="vpnpm-type ' + (newType === 'premium' ? 'type-premium' : 'type-standard') + '">' + (newType.charAt(0).toUpperCase() + newType.slice(1)) + '</span>');
           $card.find('.vpnpm-ping').text(d.ping !== null && d.ping !== undefined ? d.ping + ' ms' : 'N/A');
           $('#vpnpm-edit-modal').find(':focus').blur();
           $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
