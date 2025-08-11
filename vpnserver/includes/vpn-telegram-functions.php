@@ -1,3 +1,35 @@
+// Convert Gregorian timestamp to Jalali (Persian) date. Returns yyyy/mm/dd HH:ii in 24h.
+if (!function_exists('vpnpm_gregorian_to_jalali_datetime')) {
+	function vpnpm_gregorian_to_jalali_datetime($timestamp = null) {
+		// Minimal PHP-only Jalali conversion (Shamsi) adapted implementation
+		// Source logic adapted from publicly available algorithms for JDN conversion
+		// Inputs: Unix timestamp (seconds); if null, uses current time
+		$ts = $timestamp !== null ? (int)$timestamp : current_time('timestamp');
+		$g_y = (int) gmdate('Y', $ts);
+		$g_m = (int) gmdate('n', $ts);
+		$g_d = (int) gmdate('j', $ts);
+		list($j_y, $j_m, $j_d) = vpnpm_g2j($g_y, $g_m, $g_d);
+		$h = gmdate('H', $ts);
+		$i = gmdate('i', $ts);
+		return sprintf('%04d/%02d/%02d %s:%s', $j_y, $j_m, $j_d, $h, $i);
+	}
+	function vpnpm_g2j($g_y, $g_m, $g_d) {
+		$g_days_in_month = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+		$j_days_in_month = [0,31,31,31,31,31,31,30,30,30,30,30,29];
+		$gy = $g_y-1600; $gm = $g_m-1; $gd = $g_d-1;
+		$g_day_no = 365*$gy + (int)(($gy+3)/4) - (int)(($gy+99)/100) + (int)(($gy+399)/400);
+		for ($i=0; $i<$gm; ++$i) $g_day_no += $g_days_in_month[$i+1];
+		if ($gm>1 && (($g_y%4==0 && $g_y%100!=0) || ($g_y%400==0))) $g_day_no++;
+		$g_day_no += $gd;
+		$j_day_no = $g_day_no-79;
+		$j_np = (int)($j_day_no/12053); $j_day_no %= 12053;
+		$jy = 979+33*$j_np+4*(int)($j_day_no/1461); $j_day_no %= 1461;
+		if ($j_day_no >= 366) { $jy += (int)(($j_day_no-366)/365); $j_day_no = ($j_day_no-366)%365; }
+		for ($i=1; $i<=12 && $j_day_no >= $j_days_in_month[$i]; $i++) { $j_day_no -= $j_days_in_month[$i]; }
+		$jm = $i; $jd = $j_day_no+1;
+		return [$jy, $jm, $jd];
+	}
+}
 <?php
 /**
  * Telegram notification helpers for VPN Server Manager.
@@ -129,32 +161,25 @@ endif;
  */
 function vpnpm_format_vpn_status_message_stylish(array $servers): string {
 	$lines = [];
-	$lines[] = '*VPN Status Update*';
 	$escape_md = function($text) {
-		// Escape all Telegram MarkdownV2 special chars, including '-'
 		return preg_replace('/([_\*\[\]()~`>#+\-=|{}.!\-])/', '\\$1', (string)$text);
 	};
-	$date = date('Y-m-d H:i');
-	$lines[] = '_As of ' . $escape_md($date) . '_';
+	$lines[] = '*VPN Status Update*';
+	$jalali = vpnpm_gregorian_to_jalali_datetime();
+	$lines[] = '_Time: ' . $escape_md($jalali) . '_';
 	$lines[] = '';
-		$escape_md = function($text) {
-			// Escape all Telegram MarkdownV2 special chars, including '-'
-			return preg_replace('/([_\*\[\]()~`>#+\-=|{}.!\\-])/', '\\\\$1', $text);
-		};
-		foreach ($servers as $srv) {
-			$name = isset($srv['name']) ? $escape_md((string)$srv['name']) : '';
-			$status = isset($srv['status']) ? strtolower((string)$srv['status']) : '';
-			$emoji = $status === 'active' ? "\xF0\x9F\x9F\xA2" : "\xF0\x9F\x94\xB4"; // green or red circle
-			$ping = isset($srv['ping']) ? $srv['ping'] : '';
-			$type = isset($srv['type']) ? $escape_md((string)$srv['type']) : '';
-			$status_str = ($status === 'active' ? '*Online*' : '*Down*');
-			$block = "{$emoji} *{$name}* {$status_str}\n";
-			$block .= "Ping: `{$ping}` ms\n";
-			$block .= "Type: _{$type}_";
-			$lines[] = $block;
-			$lines[] = '';
-		}
-		return trim(implode("\n", $lines));
+	foreach ($servers as $srv) {
+		$status = isset($srv['status']) ? strtolower((string)$srv['status']) : '';
+		$emoji = $status === 'active' ? "\xF0\x9F\x9F\xA2" : "\xF0\x9F\x94\xB4"; // green or red circle
+		$name = isset($srv['name']) ? $escape_md((string)$srv['name']) : '';
+		$pingVal = isset($srv['ping']) && $srv['ping'] !== null && $srv['ping'] !== '' ? (string)$srv['ping'] : 'N/A';
+		$type = isset($srv['type']) ? $escape_md((string)$srv['type']) : '';
+		$loc = isset($srv['location']) ? $escape_md((string)$srv['location']) : '';
+	// Format: Srv03: \| Ping: 108 ms \| premium \| Location (escape '|' for MarkdownV2)
+	$line = sprintf('%s %s: \| Ping: %s ms \| %s \| %s', $emoji, $name, $pingVal, $type, ($loc !== '' ? $loc : ''));
+		$lines[] = $line;
+	}
+	return trim(implode("\n", $lines));
 }
 
 // Example usage:

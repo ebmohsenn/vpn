@@ -122,7 +122,7 @@ function vpnpm_render_dashboard_widget() {
     $table = $wpdb->prefix . 'vpn_profiles';
     // Ensure schema has the 'type' column
     if (function_exists('vpnpm_ensure_schema')) { vpnpm_ensure_schema(); }
-    $servers = $wpdb->get_results("SELECT file_name, status, last_checked, ping, type FROM {$table} ORDER BY last_checked DESC");
+    $servers = $wpdb->get_results("SELECT file_name, status, last_checked, ping, type, location FROM {$table} ORDER BY last_checked DESC");
 
     if (empty($servers)) {
         echo '<p>' . esc_html__('No VPN servers found.', 'vpnserver') . '</p>';
@@ -134,6 +134,7 @@ function vpnpm_render_dashboard_widget() {
     echo '<th>' . esc_html__('Server Name', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Status', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Type', 'vpnserver') . '</th>';
+    echo '<th>' . esc_html__('Location', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Last Checked', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Ping (ms)', 'vpnserver') . '</th>';
     echo '</tr></thead><tbody>';
@@ -157,6 +158,8 @@ function vpnpm_render_dashboard_widget() {
     echo '<td>' . $name . '</td>';
     echo '<td><span class="badge ' . esc_attr($status_class) . '">' . ucfirst($status) . '</span></td>';
                 echo '<td>' . esc_html(ucfirst($type)) . '</td>';
+                $loc = isset($server->location) ? $server->location : '';
+                echo '<td>' . esc_html($loc) . '</td>';
                 $ts = $server->last_checked ? (int) strtotime($server->last_checked) : 0;
                 echo '<td title="' . esc_attr($server->last_checked) . '" data-timestamp="' . esc_attr($ts) . '">' . esc_html($relative_time) . ' ago</td>';
     echo '<td>' . ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')) . '</td>';
@@ -250,7 +253,7 @@ add_action('vpnpm_test_all_servers_cron', 'vpnpm_test_all_servers');
 function vpnpm_test_all_servers() {
     global $wpdb;
     $table = $wpdb->prefix . 'vpn_profiles';
-    $servers = $wpdb->get_results("SELECT id, file_name, remote_host, port, status, ping, type FROM {$table}");
+    $servers = $wpdb->get_results("SELECT id, file_name, remote_host, port, status, ping, type, location FROM {$table}");
 
     // Update statuses and pings
     foreach ($servers as $server) {
@@ -276,7 +279,7 @@ function vpnpm_test_all_servers() {
     }
 
     // Fetch updated servers for summary
-    $rows = $wpdb->get_results("SELECT file_name, status, ping, type FROM {$table}");
+    $rows = $wpdb->get_results("SELECT file_name, status, ping, type, location FROM {$table}");
     $servers_arr = [];
     foreach ($rows as $row) {
         $servers_arr[] = [
@@ -284,6 +287,7 @@ function vpnpm_test_all_servers() {
             'status' => esc_html(strtolower((string)$row->status)),
             'ping' => $row->ping !== null ? (int)$row->ping : null,
             'type' => isset($row->type) ? esc_html($row->type) : 'Standard',
+            'location' => isset($row->location) ? esc_html($row->location) : '',
         ];
     }
 

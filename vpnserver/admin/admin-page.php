@@ -72,7 +72,9 @@ usort($profiles, function($a, $b) {
 						'vpnpm-nonce'
 					);
 $server_notes_safe = property_exists($server, 'notes') && $server->notes !== null ? $server->notes : '';
-$search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto . ' ' . $status_text . ' ' . $server_notes_safe);					$notes = property_exists($server, 'notes') && $server->notes !== null ? esc_html($server->notes) : esc_html__('No notes available', 'vpnserver');
+$server_location_safe = property_exists($server, 'location') && $server->location !== null ? $server->location : '';
+$search_haystack = strtolower($name . ' ' . $host . ' ' . $port . ' ' . $proto . ' ' . $status_text . ' ' . $server_notes_safe . ' ' . $server_location_safe);
+$notes = property_exists($server, 'notes') && $server->notes !== null ? esc_html($server->notes) : esc_html__('No notes available', 'vpnserver');
 
 $last_checked = $server->last_checked ? strtotime($server->last_checked) : null;
 if ($last_checked) {
@@ -82,6 +84,7 @@ if ($last_checked) {
 }
 
 $type = strtolower($server->type ?? 'standard'); // Default to 'standard'
+$location = property_exists($server, 'location') && $server->location !== null ? esc_html($server->location) : esc_html__('Unknown', 'vpnserver');
 $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 				?>
 				<div class="vpn-card vpnpm-card" data-search="<?php echo esc_attr($search_haystack); ?>">
@@ -93,6 +96,7 @@ $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 						<span class="vpnpm-status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span>
 					</p>
 					<p>Type: <span class="vpnpm-type <?php echo esc_attr($type_class); ?>"><?php echo ucfirst($type); ?></span></p>
+					<p>Location: <span class="vpnpm-location"><?php echo $location; ?></span></p>
 					<p>Last checked: <span class="vpnpm-last-checked" title="<?php echo esc_attr($server->last_checked); ?>">
 						<?php echo esc_html($last_checked_human); ?>
 					</span></p>
@@ -180,6 +184,10 @@ $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 								<option value="standard">Standard</option>
 								<option value="premium">Premium</option>
 							</select>
+						</div>
+						<div class="vpnpm-form-row">
+							<label for="vpnpm-edit-location">Location</label>
+							<input type="text" id="vpnpm-edit-location" name="location" />
 						</div>
 						<div class="vpnpm-form-row vpnpm-form-wide">
 							<label for="vpnpm-edit-notes">Notes</label>

@@ -12,14 +12,15 @@ function vpnpm_ajax_send_telegram_test() {
 
        global $wpdb;
        $table = $wpdb->prefix . 'vpn_profiles';
-       $rows = $wpdb->get_results("SELECT file_name, status, ping, type FROM {$table} ORDER BY id ASC");
+	$rows = $wpdb->get_results("SELECT file_name, status, ping, type, location FROM {$table} ORDER BY id ASC");
        $servers_arr = [];
        foreach ((array)$rows as $row) {
-	       $servers_arr[] = [
+		$servers_arr[] = [
 		       'name' => esc_html(pathinfo((string)$row->file_name, PATHINFO_FILENAME)),
 		       'status' => esc_html(strtolower((string)$row->status)),
 		       'ping' => $row->ping !== null ? (int)$row->ping : null,
-		       'type' => isset($row->type) ? esc_html($row->type) : 'Standard',
+			'type' => isset($row->type) ? esc_html($row->type) : 'Standard',
+			'location' => isset($row->location) ? esc_html($row->location) : '',
 	       ];
        }
        $msg = function_exists('vpnpm_format_vpn_status_message_stylish')
@@ -180,7 +181,8 @@ function vpnpm_ajax_get_profile() {
 		'status' => $p->status,
 		'notes' => $p->notes,
 		'label' => $p->label ?? 'standard', // Add label field
-        'type' => $p->type ?? 'standard',
+		'type' => $p->type ?? 'standard',
+		'location' => $p->location ?? '',
 		'last_checked' => $p->last_checked,
 	]);
 }
@@ -209,7 +211,8 @@ function vpnpm_ajax_update_profile() {
 		'status'      => isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : null,
 		'notes'       => isset($_POST['notes']) ? sanitize_textarea_field(wp_unslash($_POST['notes'])) : null,
 		'label'       => isset($_POST['label']) ? sanitize_text_field(wp_unslash($_POST['label'])) : 'standard', // Add label field
-        'type'        => $type,
+		'type'        => $type,
+		'location'    => isset($_POST['location']) ? sanitize_text_field(wp_unslash($_POST['location'])) : null,
 	];
 	// remove nulls
 	$data = array_filter($data, function($v){ return $v !== null; });
@@ -237,6 +240,7 @@ function vpnpm_ajax_update_profile() {
 		'notes' => $p->notes,
 		'label' => $p->label ?? 'standard', // Add label field
 		'type' => $p->type ?? 'standard',
+		'location' => $p->location ?? '',
 		'last_checked' => $p->last_checked,
 	]);
 }

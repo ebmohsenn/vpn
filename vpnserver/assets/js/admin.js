@@ -186,6 +186,7 @@
           $('#vpnpm-edit-notes').val(d.notes || '');
           $('#vpnpm-edit-label').val((d.label || 'standard').toLowerCase());
           $('#vpnpm-edit-type').val((d.type || 'standard').toLowerCase());
+          $('#vpnpm-edit-location').val(d.location || '');
         } else {
           alert((resp && resp.data && resp.data.message) || 'Failed to load profile.');
         }
@@ -213,7 +214,8 @@
         status: $('#vpnpm-edit-status').val(),
         notes: $('#vpnpm-edit-notes').val(),
         label: $('#vpnpm-edit-label').val(),
-        type: $('#vpnpm-edit-type').val()
+  type: $('#vpnpm-edit-type').val(),
+  location: $('#vpnpm-edit-location').val()
       };
       $.ajax({
         url: vpnpmAjax.ajaxurl,
@@ -235,6 +237,10 @@
           var newType = (d && d.type) ? d.type : (payload.type || 'standard');
           $card.find('p:contains("Type:")').html('Type: <span class="vpnpm-type ' + (newType === 'premium' ? 'type-premium' : 'type-standard') + '">' + (newType.charAt(0).toUpperCase() + newType.slice(1)) + '</span>');
           $card.find('.vpnpm-ping').text(d.ping !== null && d.ping !== undefined ? d.ping + ' ms' : 'N/A');
+          if (d.location !== undefined) {
+            const $loc = $card.find('.vpnpm-location');
+            if ($loc.length) $loc.text(d.location || 'Unknown');
+          }
           $('#vpnpm-edit-modal').find(':focus').blur();
           $('#vpnpm-edit-modal').attr('aria-hidden', 'true').attr('hidden', 'hidden');
         } else {
