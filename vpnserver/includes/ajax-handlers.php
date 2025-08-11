@@ -10,26 +10,31 @@ function vpnpm_ajax_send_telegram_test() {
 	}
 	check_ajax_referer('vpnpm-nonce');
 
-	global $wpdb;
-	$table = $wpdb->prefix . 'vpn_profiles';
-	$rows = $wpdb->get_results("SELECT file_name, status, ping, type FROM {$table} ORDER BY id ASC");
-	$servers_arr = [];
-	foreach ((array)$rows as $row) {
-		$servers_arr[] = [
-			'name' => esc_html(pathinfo((string)$row->file_name, PATHINFO_FILENAME)),
-			'status' => esc_html(strtolower((string)$row->status)),
-			'ping' => $row->ping !== null ? (int)$row->ping : null,
-			'type' => isset($row->type) ? esc_html($row->type) : 'Standard',
-		];
-	}
-	$msg = function_exists('vpnpm_format_vpn_status_message_stylish')
-		? vpnpm_format_vpn_status_message_stylish($servers_arr)
-		: 'VPN Status (Test)';
-	$ok = function_exists('vpnpm_send_telegram_message') ? vpnpm_send_telegram_message($msg, null, 'MarkdownV2') : false;
-	if ($ok) {
-		wp_send_json_success(['message' => __('Telegram message sent.', 'vpnserver')]);
-	}
-	wp_send_json_error(['message' => __('Telegram not configured or send failed.', 'vpnserver')]);
+       global $wpdb;
+       $table = $wpdb->prefix . 'vpn_profiles';
+       $rows = $wpdb->get_results("SELECT file_name, status, ping, type FROM {$table} ORDER BY id ASC");
+       $servers_arr = [];
+       foreach ((array)$rows as $row) {
+	       $servers_arr[] = [
+		       'name' => esc_html(pathinfo((string)$row->file_name, PATHINFO_FILENAME)),
+		       'status' => esc_html(strtolower((string)$row->status)),
+		       'ping' => $row->ping !== null ? (int)$row->ping : null,
+		       'type' => isset($row->type) ? esc_html($row->type) : 'Standard',
+	       ];
+       }
+       $msg = function_exists('vpnpm_format_vpn_status_message_stylish')
+	       ? vpnpm_format_vpn_status_message_stylish($servers_arr)
+	       : 'VPN Status (Test)';
+       $error = null;
+       $ok = false;
+       if (function_exists('vpnpm_send_telegram_message')) {
+	       $ok = vpnpm_send_telegram_message($msg, null, 'MarkdownV2', $error);
+       }
+       if ($ok) {
+	       wp_send_json_success(['message' => __('Telegram message sent.', 'vpnserver')]);
+       }
+       $errMsg = $error ? $error : __('Telegram not configured or send failed.', 'vpnserver');
+       wp_send_json_error(['message' => $errMsg]);
 }
 endif;
 
