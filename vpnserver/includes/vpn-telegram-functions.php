@@ -2,16 +2,26 @@
 // Convert Gregorian timestamp to Jalali (Persian) date. Returns yyyy/mm/dd HH:ii in 24h.
 if (!function_exists('vpnpm_gregorian_to_jalali_datetime')) {
 	function vpnpm_gregorian_to_jalali_datetime($timestamp = null) {
-		// Minimal PHP-only Jalali conversion (Shamsi) adapted implementation
-		// Source logic adapted from publicly available algorithms for JDN conversion
+		// Jalali conversion based on Tehran timezone
 		// Inputs: Unix timestamp (seconds); if null, uses current time
-		$ts = $timestamp !== null ? (int)$timestamp : current_time('timestamp');
-		$g_y = (int) gmdate('Y', $ts);
-		$g_m = (int) gmdate('n', $ts);
-		$g_d = (int) gmdate('j', $ts);
+		try {
+			$tz = new \DateTimeZone('Asia/Tehran');
+		} catch (\Exception $e) {
+			$tz = new \DateTimeZone('UTC');
+		}
+		if ($timestamp !== null) {
+			$dt = new \DateTimeImmutable('@' . (int)$timestamp);
+			$dt = $dt->setTimezone($tz);
+		} else {
+			// Use current server time but represent in Tehran timezone
+			$dt = new \DateTimeImmutable('now', $tz);
+		}
+		$g_y = (int)$dt->format('Y');
+		$g_m = (int)$dt->format('n');
+		$g_d = (int)$dt->format('j');
 		list($j_y, $j_m, $j_d) = vpnpm_g2j($g_y, $g_m, $g_d);
-		$h = gmdate('H', $ts);
-		$i = gmdate('i', $ts);
+		$h = $dt->format('H');
+		$i = $dt->format('i');
 		return sprintf('%04d/%02d/%02d %s:%s', $j_y, $j_m, $j_d, $h, $i);
 	}
 	function vpnpm_g2j($g_y, $g_m, $g_d) {
