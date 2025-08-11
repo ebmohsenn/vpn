@@ -44,7 +44,7 @@ class Vpnpm_Settings {
     public function add_menu() {
         $cap = self::capability();
         add_submenu_page(
-            'vpn-manager',
+            'vpmgr',
             __('VPN Manager Settings', 'vpnserver'),
             __('Plugin Settings', 'vpnserver'),
             $cap,

@@ -53,7 +53,7 @@ function vpnserver_add_admin_menu() {
         __('VPN Manager', 'vpnserver'),
         __('VPN Manager', 'vpnserver'),
         'manage_options',
-        'vpn-manager',
+    'vpmgr',
         'vpnpm_admin_page',
         'dashicons-shield',
         30
@@ -64,7 +64,10 @@ function vpnserver_add_admin_menu() {
 add_action('admin_enqueue_scripts', 'vpnserver_admin_assets');
 function vpnserver_admin_assets($hook) {
     // Ensure scripts load on our admin page and its subpages
-    if (strpos((string)$hook, 'vpn-manager') === false && strpos((string)$hook, 'settings_page_vpn-manager-settings') === false) {
+    if (
+        strpos((string)$hook, 'vpmgr') === false
+        && strpos((string)$hook, 'settings_page_vpn-manager-settings') === false
+    ) {
         return;
     }
     $css_rel = 'assets/css/admin.css';
@@ -171,6 +174,9 @@ function vpnpm_render_dashboard_widget() {
     }
 
     echo '</tbody></table>';
+
+    // Optional: quick link to the admin page with safer slug
+    echo '<p><a href="' . esc_url(admin_url('admin.php?page=vpmgr')) . '">' . esc_html__('Open VPN Manager', 'vpnserver') . '</a></p>';
 
         // Inline script to enable sorting by clicking on header cells
         echo '<script>(function(){
