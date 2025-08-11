@@ -179,6 +179,62 @@ function vpnpm_ajax_test_server() {
 }
 endif;
 
+// AJAX: Test Check-Host ping for a single server and update cache
+if (!function_exists('vpnpm_ajax_test_server_checkhost')):
+add_action('wp_ajax_vpnpm_test_server_checkhost', 'vpnpm_ajax_test_server_checkhost');
+function vpnpm_ajax_test_server_checkhost() {
+	if (!current_user_can('manage_options')) {
+		wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
+	}
+	check_ajax_referer('vpnpm-nonce');
+
+	$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+	if (!$id) {
+		wp_send_json_error(['message' => __('Invalid ID', 'vpnserver')], 400);
+	}
+	$profile = vpnpm_get_profile_by_id($id);
+	if (!$profile) {
+		wp_send_json_error(['message' => __('Profile not found', 'vpnserver')], 404);
+	}
+	if (!function_exists('vpnpm_checkhost_initiate_ping')) {
+		wp_send_json_error(['message' => __('Check-Host integration not available.', 'vpnserver')], 500);
+	}
+	$opts = class_exists('Vpnpm_Settings') ? Vpnpm_Settings::get_settings() : [];
+	$node_str = isset($opts['checkhost_nodes']) ? (string)$opts['checkhost_nodes'] : '';
+	$nodes = array_values(array_filter(array_map('trim', explode(',', $node_str))));
+
+	// Initiate and poll
+	list($init, $err) = vpnpm_checkhost_initiate_ping($profile->remote_host, $nodes);
+	$avg = null; $raw = null;
+	if ($init && isset($init['request_id'])) {
+		$request_id = $init['request_id'];
+		$attempts = 0; $max_attempts = 8;
+		do {
+			vpnpm_checkhost_rate_limit_sleep();
+			list($res, $perr) = vpnpm_checkhost_poll_result($request_id);
+			$attempts++;
+			if ($res && is_array($res)) {
+				$raw = $res;
+				$avg = vpnpm_checkhost_aggregate_ping_ms($res);
+				if ($avg !== null || $attempts >= $max_attempts) {
+					break;
+				}
+			}
+		} while ($attempts < $max_attempts);
+	}
+	vpnpm_store_checkhost_result($id, $avg, $raw);
+
+	global $wpdb; $table = $wpdb->prefix . 'vpn_profiles';
+	$ch_ts = $wpdb->get_var($wpdb->prepare("SELECT checkhost_last_checked FROM {$table} WHERE id = %d", $id));
+
+	wp_send_json_success([
+		'id' => $id,
+		'ch_ping' => $avg !== null ? (int)$avg : null,
+		'ch_last_checked' => $ch_ts,
+	]);
+}
+endif;
+
 // AJAX: Download config
 if (!function_exists('vpnpm_ajax_download_config')):
 add_action('wp_ajax_vpnpm_download_config', 'vpnpm_ajax_download_config');

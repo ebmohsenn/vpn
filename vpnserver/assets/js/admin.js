@@ -101,6 +101,28 @@
         }
       }).fail(function() {
         $status.removeClass('badge-green').addClass('badge badge-red').text('Down');
+      }).always(function(){
+        // Also try to refresh Check-Host ping if integration is active
+        $.ajax({
+          url: vpnpmAjax.ajaxurl,
+          type: 'POST',
+          dataType: 'json',
+          data: { action: 'vpnpm_test_server_checkhost', _ajax_nonce: vpnpmAjax.nonce, id: id }
+        }).done(function(resp){
+          if (resp && resp.success) {
+            const $ch = $card.find('.vpnpm-ping-ch');
+            if ($ch.length) {
+              const val = resp.data.ch_ping;
+              if (val !== null && val !== undefined) {
+                const oldVal = parseInt($ch.text(), 10);
+                if (oldVal !== val) {
+                  $ch.text(val + ' ms').addClass('ping-changed');
+                  setTimeout(function(){ $ch.removeClass('ping-changed'); }, 5000);
+                }
+              }
+            }
+          }
+        });
       });
     }
 
