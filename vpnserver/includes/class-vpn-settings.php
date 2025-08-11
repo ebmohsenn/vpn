@@ -28,6 +28,7 @@ class Vpnpm_Settings {
             'enable_cron'       => 1,
             'enable_telegram'   => 1,
             'cron_interval'     => '10', // minutes: '5','10','15'
+            'telegram_time_mode'=> 'jalali', // 'jalali' or 'system'
         ];
     }
 
@@ -118,6 +119,14 @@ class Vpnpm_Settings {
             'vpnpm_settings_page',
             'vpnpm_settings_section'
         );
+
+        add_settings_field(
+            'telegram_time_mode',
+            __('Telegram Time Format', 'vpnserver'),
+            [__CLASS__, 'field_telegram_time_mode'],
+            'vpnpm_settings_page',
+            'vpnpm_settings_section'
+        );
     }
 
     public static function sanitize_settings($input) {
@@ -146,6 +155,10 @@ class Vpnpm_Settings {
         $allowed = ['5','10','15'];
         $interval = isset($in['cron_interval']) ? (string) $in['cron_interval'] : '10';
         $out['cron_interval'] = in_array($interval, $allowed, true) ? $interval : '10';
+
+    // Telegram time mode
+    $tm = isset($in['telegram_time_mode']) ? (string)$in['telegram_time_mode'] : 'jalali';
+    $out['telegram_time_mode'] = in_array($tm, ['jalali','system'], true) ? $tm : 'jalali';
 
         // Reschedule when settings change
         add_action('updated_option', function($option, $old, $new){
@@ -212,6 +225,14 @@ class Vpnpm_Settings {
             printf('<option value="%s" %s>%s</option>', esc_attr($k), selected($val, $k, false), esc_html($label));
         }
         echo '</select>';
+    }
+
+    public static function field_telegram_time_mode() {
+        $opts = self::get_settings();
+        $val = isset($opts['telegram_time_mode']) ? (string)$opts['telegram_time_mode'] : 'jalali';
+        echo '<label><input type="radio" name="' . esc_attr(self::OPTION) . '[telegram_time_mode]" value="jalali" ' . checked($val, 'jalali', false) . '> ' . esc_html__('Jalali (Persian calendar)', 'vpnserver') . '</label><br />';
+        echo '<label><input type="radio" name="' . esc_attr(self::OPTION) . '[telegram_time_mode]" value="system" ' . checked($val, 'system', false) . '> ' . esc_html__('System timezone (site setting)', 'vpnserver') . '</label>';
+        echo '<p class="description">' . esc_html__('Choose how the time is displayed in Telegram messages.', 'vpnserver') . '</p>';
     }
 
     public function render_settings_page() {

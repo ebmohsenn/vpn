@@ -165,10 +165,41 @@ function vpnpm_format_vpn_status_message_stylish(array $servers): string {
 		return preg_replace('/([_\*\[\]()~`>#+\-=|{}.!\-])/', '\\$1', (string)$text);
 	};
 	$lines[] = '*VPN Status Update*';
-	$jalali = vpnpm_gregorian_to_jalali_datetime();
-	$lines[] = '_Time: ' . $escape_md($jalali) . '_';
+	// Time mode from settings: 'jalali' or 'system'
+	$timeStr = '';
+	if (class_exists('Vpnpm_Settings')) {
+		$opts = Vpnpm_Settings::get_settings();
+		$mode = isset($opts['telegram_time_mode']) ? (string)$opts['telegram_time_mode'] : 'jalali';
+		if ($mode === 'system') {
+			// Site timezone per WP settings
+			$timeStr = date_i18n('Y-m-d H:i');
+		} else {
+			$timeStr = vpnpm_gregorian_to_jalali_datetime();
+		}
+	} else {
+		$timeStr = vpnpm_gregorian_to_jalali_datetime();
+	}
+	$lines[] = '_Time: ' . $escape_md($timeStr) . '_';
 	$lines[] = '';
+	// Partition and sort: active with ping ascending first, then offline/others
+	$active = [];
+	$offline = [];
 	foreach ($servers as $srv) {
+		$status = isset($srv['status']) ? strtolower((string)$srv['status']) : '';
+		$pingVal = isset($srv['ping']) && $srv['ping'] !== null && $srv['ping'] !== '' ? (int)$srv['ping'] : null;
+		if ($status === 'active' && $pingVal !== null) {
+			$srv['__pingInt'] = $pingVal;
+			$active[] = $srv;
+		} else {
+			$offline[] = $srv;
+		}
+	}
+	usort($active, function($a, $b){
+		return ($a['__pingInt'] ?? PHP_INT_MAX) <=> ($b['__pingInt'] ?? PHP_INT_MAX);
+	});
+	$ordered = array_merge($active, $offline);
+
+	foreach ($ordered as $srv) {
 		$status = isset($srv['status']) ? strtolower((string)$srv['status']) : '';
 		$emoji = $status === 'active' ? "\xF0\x9F\x9F\xA2" : "\xF0\x9F\x94\xB4"; // green or red circle
 		$name = isset($srv['name']) ? $escape_md((string)$srv['name']) : '';
