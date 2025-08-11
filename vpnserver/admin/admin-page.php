@@ -103,7 +103,18 @@ $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 					<p>Ping (Server): <span class="vpnpm-ping-server"><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
 					<?php if (property_exists($server, 'checkhost_ping_avg')): ?>
 					<?php $chErr = property_exists($server, 'checkhost_last_error') ? (string)$server->checkhost_last_error : ''; ?>
-					<p>Ping (Check-Host): <span class="vpnpm-ping-ch"<?php echo $chErr ? ' title="' . esc_attr($chErr) . '"' : ''; ?>><?php echo ($server->checkhost_ping_avg !== null ? esc_html((int)$server->checkhost_ping_avg) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span><?php if ($chErr): ?> <small class="ch-error-flag" style="color:#d63638;">(<?php echo esc_html__('error', 'vpnserver'); ?>)</small><?php endif; ?></p>
+					<p>Ping (Check-Host):
+						<span class="vpnpm-ping-ch"<?php echo $chErr ? ' title="' . esc_attr($chErr) . '"' : ''; ?>>
+							<?php
+							if ($server->checkhost_ping_avg !== null) {
+								echo esc_html((int)$server->checkhost_ping_avg) . ' ms';
+							} elseif ($chErr) {
+								echo esc_html__('Error', 'vpnserver');
+							} else {
+								echo esc_html__('No data', 'vpnserver');
+							}
+							?>
+						</span><?php if ($chErr): ?> <small class="ch-error-flag" style="color:#d63638;">(<?php echo esc_html__('error', 'vpnserver'); ?>)</small><?php endif; ?></p>
 					<?php endif; ?>
 					<p>Notes: <?php echo $notes; ?></p>
 					<div>

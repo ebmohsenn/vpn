@@ -69,7 +69,12 @@ function vpnpm_ajax_get_checkhost_details() {
 		wp_send_json_error(['message' => __('Invalid ID', 'vpnserver')], 400);
 	}
 	global $wpdb; $table = $wpdb->prefix . 'vpn_profiles';
-	$row = $wpdb->get_row($wpdb->prepare("SELECT file_name, checkhost_ping_json, checkhost_last_checked, checkhost_last_error FROM {$table} WHERE id = %d", $id));
+	$row = $wpdb->get_row($wpdb->prepare("SELECT file_name, checkhost_ping_json, checkhost_last_checked, checkhost_last_error, checkhost_ping_avg FROM {$table} WHERE id = %d", $id));
+	if (defined('WP_DEBUG') && WP_DEBUG && $row) {
+		error_log('[vpnserver] Stored Check-Host ping avg: ' . $row->checkhost_ping_avg);
+		error_log('[vpnserver] Stored Check-Host last error: ' . $row->checkhost_last_error);
+		error_log('[vpnserver] Stored Check-Host raw JSON: ' . substr((string)$row->checkhost_ping_json, 0, 200));
+	}
 	if (!$row) {
 		wp_send_json_error(['message' => __('Profile not found', 'vpnserver')], 404);
 	}

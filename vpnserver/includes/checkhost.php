@@ -104,11 +104,17 @@ function vpnpm_checkhost_initiate_ping($target, array $nodes = [], $max_nodes = 
         }
     }
     $body = implode('&', $pairs);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[vpnserver] Check-Host API request: ' . $endpoint . ' BODY: ' . $body);
+    }
     $response = wp_remote_post($endpoint, [
         'timeout' => 12,
         'headers' => ['Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8'],
         'body'    => $body,
     ]);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[vpnserver] Check-Host API response: ' . print_r($response, true));
+    }
     if (is_wp_error($response)) return [false, $response->get_error_message()];
     $code = wp_remote_retrieve_response_code($response);
     if ($code !== 200) return [false, 'HTTP ' . $code];
@@ -206,12 +212,17 @@ endif;
 if (!function_exists('vpnpm_store_checkhost_result')):
 function vpnpm_store_checkhost_result($profile_id, $avg_ms, $raw_result) {
     global $wpdb; $table = vpnpm_table_name();
+    $last_checked = current_time('mysql');
     $wpdb->update($table, [
         'checkhost_ping_avg'     => $avg_ms !== null ? (int)$avg_ms : null,
         'checkhost_ping_json'    => wp_json_encode($raw_result),
-        'checkhost_last_checked' => current_time('mysql'),
+        'checkhost_last_checked' => $last_checked,
         'checkhost_last_error'   => null,
     ], ['id' => (int)$profile_id], ['%d','%s','%s','%s'], ['%d']);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[vpnserver] Saving ping avg: ' . $avg_ms . ', last checked: ' . $last_checked);
+        error_log('[vpnserver] DB update result: ' . print_r($wpdb->last_error, true));
+    }
 }
 endif;
 
@@ -229,6 +240,7 @@ function vpnpm_store_checkhost_error($profile_id, $error_message, $raw_result = 
     $wpdb->update($table, $data, ['id' => (int)$profile_id]);
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('[vpnserver] Check-Host error for profile ' . (int)$profile_id . ': ' . $safe);
+    error_log('[vpnserver] DB update result: ' . print_r($wpdb->last_error, true));
     }
 }
 endif;
