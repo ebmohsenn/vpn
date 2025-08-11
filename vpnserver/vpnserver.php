@@ -298,9 +298,17 @@ function vpnpm_test_all_servers() {
                             }
                         }
                     } while ($attempts < $max_attempts);
+                } else {
+                    if (function_exists('vpnpm_store_checkhost_error')) {
+                        vpnpm_store_checkhost_error($server->id, $err ?: 'Check-Host init failed');
+                    }
                 }
-                // Store results
-                vpnpm_store_checkhost_result($server->id, $avg, $raw);
+                // Store results or error
+                if ($avg !== null || $raw !== null) {
+                    vpnpm_store_checkhost_result($server->id, $avg, $raw);
+                } elseif (function_exists('vpnpm_store_checkhost_error')) {
+                    vpnpm_store_checkhost_error($server->id, isset($perr) && $perr ? $perr : ($err ?: 'No data from Check-Host'));
+                }
             } else {
                 // Leave existing value as-is, fetch for telegram summary
                 $avg = $wpdb->get_var($wpdb->prepare("SELECT checkhost_ping_avg FROM {$table} WHERE id = %d", $server->id));

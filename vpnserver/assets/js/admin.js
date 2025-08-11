@@ -99,6 +99,15 @@
             setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
           }
         }
+        const $ch = $card.find('.vpnpm-ping-ch');
+        const newChPing = resp && resp.success ? resp.data.ch_ping : null;
+        if (newChPing !== null) {
+          const oldChPing = parseInt($ch.text(), 10);
+          if (oldChPing !== newChPing) {
+            $ch.text(newChPing + ' ms').addClass('ping-changed');
+            setTimeout(function() { $ch.removeClass('ping-changed'); }, 5000);
+          }
+        }
       }).fail(function() {
         $status.removeClass('badge-green').addClass('badge badge-red').text('Down');
       }).always(function(){
@@ -119,6 +128,19 @@
                   $ch.text(val + ' ms').addClass('ping-changed');
                   setTimeout(function(){ $ch.removeClass('ping-changed'); }, 5000);
                 }
+              } else if (!$ch.text().trim()) {
+                $ch.text('N/A');
+              }
+              // Tooltip + error flag from response
+              const err = resp.data && resp.data.ch_error;
+              if (err) {
+                $ch.attr('title', err);
+                if (!$ch.next('.ch-error-flag').length) {
+                  $ch.after('<small class="ch-error-flag" style="color:#d63638;"> (error)</small>');
+                }
+              } else {
+                $ch.removeAttr('title');
+                $ch.next('.ch-error-flag').remove();
               }
             }
           }
@@ -155,6 +177,9 @@
           const d = resp.data;
           $('#vpnpm-moreping-server').text(d.server || '');
           $('#vpnpm-moreping-updated').text(d.updated || 'N/A');
+          if (d.error) {
+            $('#vpnpm-moreping-error').text(d.error).show();
+          }
           const $nodes = $('#vpnpm-moreping-nodes').empty();
           if (Array.isArray(d.nodes) && d.nodes.length) {
             d.nodes.forEach(function(n){
@@ -403,6 +428,16 @@
                 $ch.text(server.ch_ping + ' ms').addClass('ping-changed');
                 setTimeout(function() { $ch.removeClass('ping-changed'); }, 5000);
               }
+                // Apply tooltip and error flag based on polling data
+                if (server.ch_error) {
+                  $ch.attr('title', server.ch_error);
+                  if (!$ch.next('.ch-error-flag').length) {
+                    $ch.after('<small class="ch-error-flag" style="color:#d63638;"> (error)</small>');
+                  }
+                } else {
+                  $ch.removeAttr('title');
+                  $ch.next('.ch-error-flag').remove();
+                }
             }
 
             const $lastChecked = $card.find('.vpnpm-last-checked');

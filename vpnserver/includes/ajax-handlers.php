@@ -72,7 +72,7 @@ function vpnpm_ajax_get_checkhost_details() {
 		wp_send_json_error(['message' => __('Invalid ID', 'vpnserver')], 400);
 	}
 	global $wpdb; $table = $wpdb->prefix . 'vpn_profiles';
-	$row = $wpdb->get_row($wpdb->prepare("SELECT file_name, checkhost_ping_json, checkhost_last_checked FROM {$table} WHERE id = %d", $id));
+	$row = $wpdb->get_row($wpdb->prepare("SELECT file_name, checkhost_ping_json, checkhost_last_checked, checkhost_last_error FROM {$table} WHERE id = %d", $id));
 	if (!$row) {
 		wp_send_json_error(['message' => __('Profile not found', 'vpnserver')], 404);
 	}
@@ -114,11 +114,15 @@ function vpnpm_ajax_get_checkhost_details() {
 		$av = $a['avg'] ?? PHP_INT_MAX; $bv = $b['avg'] ?? PHP_INT_MAX;
 		return $av <=> $bv;
 	});
-	wp_send_json_success([
+	$payload = [
 		'server' => pathinfo((string)$row->file_name, PATHINFO_FILENAME),
 		'updated' => $row->checkhost_last_checked ? (string)$row->checkhost_last_checked : null,
 		'nodes' => $nodes,
-	]);
+	];
+	if (!empty($row->checkhost_last_error)) {
+		$payload['error'] = (string)$row->checkhost_last_error;
+	}
+	wp_send_json_success($payload);
 }
 endif;
 
@@ -221,16 +225,28 @@ function vpnpm_ajax_test_server_checkhost() {
 				}
 			}
 		} while ($attempts < $max_attempts);
+	} else {
+		// Initiation failed
+		if (function_exists('vpnpm_store_checkhost_error')) {
+			vpnpm_store_checkhost_error($id, $err ?: 'Check-Host init failed');
+		}
 	}
-	vpnpm_store_checkhost_result($id, $avg, $raw);
+	if ($avg !== null || $raw !== null) {
+		vpnpm_store_checkhost_result($id, $avg, $raw);
+	} elseif (function_exists('vpnpm_store_checkhost_error')) {
+		vpnpm_store_checkhost_error($id, isset($perr) && $perr ? $perr : ($err ?: 'No data from Check-Host'));
+	}
 
 	global $wpdb; $table = $wpdb->prefix . 'vpn_profiles';
-	$ch_ts = $wpdb->get_var($wpdb->prepare("SELECT checkhost_last_checked FROM {$table} WHERE id = %d", $id));
+	$row2 = $wpdb->get_row($wpdb->prepare("SELECT checkhost_last_checked, checkhost_last_error FROM {$table} WHERE id = %d", $id));
+	$ch_ts = $row2 ? $row2->checkhost_last_checked : null;
+	$ch_err = $row2 ? $row2->checkhost_last_error : null;
 
 	wp_send_json_success([
 		'id' => $id,
 		'ch_ping' => $avg !== null ? (int)$avg : null,
 		'ch_last_checked' => $ch_ts,
+		'ch_error' => $ch_err,
 	]);
 }
 endif;
@@ -465,7 +481,7 @@ function vpnpm_ajax_get_all_status() {
 
     global $wpdb;
     $table = $wpdb->prefix . 'vpn_profiles';
-	$servers = $wpdb->get_results("SELECT id, status, ping, checkhost_ping_avg, last_checked, checkhost_last_checked FROM {$table}");
+	$servers = $wpdb->get_results("SELECT id, status, ping, checkhost_ping_avg, last_checked, checkhost_last_checked, checkhost_last_error FROM {$table}");
 
 	$data = array_map(function($server) {
         return [
@@ -473,8 +489,9 @@ function vpnpm_ajax_get_all_status() {
             'status'       => esc_html($server->status),
             'ping'         => $server->ping !== null ? (int) $server->ping : null,
 			'ch_ping'      => isset($server->checkhost_ping_avg) && $server->checkhost_ping_avg !== null ? (int)$server->checkhost_ping_avg : null,
-            'last_checked' => esc_html($server->last_checked),
+			'last_checked' => esc_html($server->last_checked),
 			'ch_last_checked' => isset($server->checkhost_last_checked) ? esc_html($server->checkhost_last_checked) : null,
+			'ch_error' => isset($server->checkhost_last_error) ? esc_html($server->checkhost_last_error) : null,
         ];
     }, $servers);
 

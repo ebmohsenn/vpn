@@ -29,6 +29,7 @@ function vpnpm_create_tables() {
 		checkhost_ping_avg int(11) DEFAULT NULL,
 		checkhost_ping_json longtext NULL,
 		checkhost_last_checked datetime DEFAULT NULL,
+		checkhost_last_error text NULL,
 		notes text NULL,
 		last_checked datetime DEFAULT NULL,
 		created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -73,6 +74,10 @@ function vpnpm_ensure_schema() {
 	$has_ch_ts = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", 'checkhost_last_checked'));
 	if (!$has_ch_ts) {
 		$wpdb->query("ALTER TABLE {$table} ADD COLUMN checkhost_last_checked datetime DEFAULT NULL AFTER checkhost_ping_json");
+	}
+	$has_ch_err = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", 'checkhost_last_error'));
+	if (!$has_ch_err) {
+		$wpdb->query("ALTER TABLE {$table} ADD COLUMN checkhost_last_error text NULL AFTER checkhost_last_checked");
 	}
 }
 endif;
@@ -131,7 +136,7 @@ function vpnpm_get_all_profiles() {
 	global $wpdb;
 	$table = vpnpm_table_name();
 	vpnpm_ensure_schema();
-	return $wpdb->get_results("SELECT id, file_name, remote_host, port, protocol, status, ping, type, label, location, checkhost_ping_avg, checkhost_last_checked, last_checked FROM {$table}");
+	return $wpdb->get_results("SELECT id, file_name, remote_host, port, protocol, status, ping, type, label, location, checkhost_ping_avg, checkhost_last_checked, checkhost_last_error, last_checked FROM {$table}");
 }
 endif;
 

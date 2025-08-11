@@ -111,10 +111,29 @@ if (!function_exists('vpnpm_store_checkhost_result')):
 function vpnpm_store_checkhost_result($profile_id, $avg_ms, $raw_result) {
     global $wpdb; $table = vpnpm_table_name();
     $wpdb->update($table, [
-        'checkhost_ping_avg' => $avg_ms !== null ? (int)$avg_ms : null,
-        'checkhost_ping_json' => wp_json_encode($raw_result),
+        'checkhost_ping_avg'     => $avg_ms !== null ? (int)$avg_ms : null,
+        'checkhost_ping_json'    => wp_json_encode($raw_result),
         'checkhost_last_checked' => current_time('mysql'),
-    ], ['id' => (int)$profile_id], ['%d','%s','%s'], ['%d']);
+        'checkhost_last_error'   => null,
+    ], ['id' => (int)$profile_id], ['%d','%s','%s','%s'], ['%d']);
+}
+endif;
+
+if (!function_exists('vpnpm_store_checkhost_error')):
+function vpnpm_store_checkhost_error($profile_id, $error_message, $raw_result = null) {
+    global $wpdb; $table = vpnpm_table_name();
+    $safe = wp_strip_all_tags((string)$error_message);
+    $data = [
+        'checkhost_last_error'   => $safe,
+        'checkhost_last_checked' => current_time('mysql'),
+    ];
+    if (!is_null($raw_result)) {
+        $data['checkhost_ping_json'] = wp_json_encode($raw_result);
+    }
+    $wpdb->update($table, $data, ['id' => (int)$profile_id]);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[vpnserver] Check-Host error for profile ' . (int)$profile_id . ': ' . $safe);
+    }
 }
 endif;
 
