@@ -45,22 +45,62 @@ function vpnpm_checkhost_label_for_host($host) {
 }
 endif;
 
+if (!function_exists('vpnpm_checkhost_load_nodes')):
+/**
+ * Load node list from Check-Host API, cache it in a transient, and fallback to curated.
+ * Returns array of [host,label].
+ */
+function vpnpm_checkhost_load_nodes() {
+    $cached = get_transient('vpnpm_checkhost_nodes');
+    if (is_array($cached) && !empty($cached)) return $cached;
+    $out = [];
+    // Official list of nodes with labels is not formally documented; attempt a best-effort fetch
+    $resp = wp_remote_get('https://check-host.net/nodes/hosts', ['timeout' => 10]);
+    if (!is_wp_error($resp) && wp_remote_retrieve_response_code($resp) === 200) {
+        $body = wp_remote_retrieve_body($resp);
+        $json = json_decode($body, true);
+        if (is_array($json)) {
+            foreach ($json as $row) {
+                // Expecting entries like {host: ..., location: ...} or similar shape
+                if (is_array($row)) {
+                    $host = isset($row['host']) ? (string)$row['host'] : '';
+                    $label = isset($row['location']) ? (string)$row['location'] : (isset($row['label']) ? (string)$row['label'] : $host);
+                    if ($host !== '') {
+                        $out[] = ['host' => $host, 'label' => $label];
+                    }
+                } elseif (is_string($row)) {
+                    $out[] = ['host' => $row, 'label' => $row];
+                }
+            }
+        }
+    }
+    if (empty($out)) {
+        $out = vpnpm_checkhost_curated_nodes();
+    }
+    set_transient('vpnpm_checkhost_nodes', $out, 6 * HOUR_IN_SECONDS);
+    return $out;
+}
+endif;
+
 if (!function_exists('vpnpm_checkhost_initiate_ping')):
 /**
  * Start a Check-Host ping test using the official API.
  * - POST https://check-host.net/check-ping
  * - Required: host
- * - Optional: nodes[]=node-hostname (repeatable)
+ * - Optional: node=node-hostname repeated per selection, max_nodes=int
  * Returns: [array $init|false, string|null $error]
  */
-function vpnpm_checkhost_initiate_ping($target, array $nodes = []) {
+function vpnpm_checkhost_initiate_ping($target, array $nodes = [], $max_nodes = null) {
     $endpoint = 'https://check-host.net/check-ping';
-    // Build body with nodes[]=... format explicitly
+    // Build body with repeated node= parameters (official style)
     $pairs = [ 'host=' . rawurlencode($target) ];
+    if ($max_nodes !== null) {
+        $pairs[] = 'max_nodes=' . rawurlencode((string)(int)$max_nodes);
+    }
     foreach ($nodes as $n) {
         $n = trim((string)$n);
         if ($n !== '') {
-            $pairs[] = 'nodes%5B%5D=' . rawurlencode($n); // nodes[] url-encoded key
+            $pairs[] = 'node=' . rawurlencode($n);
         }
     }
     $body = implode('&', $pairs);

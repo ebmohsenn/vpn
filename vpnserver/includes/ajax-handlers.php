@@ -50,10 +50,7 @@ function vpnpm_ajax_list_checkhost_nodes() {
 	check_ajax_referer('vpnpm-nonce');
 	// Since Check-Host does not provide an open directory of nodes, offer a configurable sample list.
 	// Admins can paste their own hostnames in settings as needed. These are examples and may change.
-	if (!function_exists('vpnpm_checkhost_curated_nodes')) {
-		wp_send_json_success(['nodes' => []]);
-	}
-	$nodes = vpnpm_checkhost_curated_nodes(); // [{host,label}]
+	$nodes = function_exists('vpnpm_checkhost_load_nodes') ? vpnpm_checkhost_load_nodes() : (function_exists('vpnpm_checkhost_curated_nodes') ? vpnpm_checkhost_curated_nodes() : []);
 	wp_send_json_success(['nodes' => $nodes]);
 }
 endif;
