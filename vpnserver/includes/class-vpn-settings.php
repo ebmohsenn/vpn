@@ -196,7 +196,10 @@ class Vpnpm_Settings {
         $nodes = array_filter(array_map(function($s){
             $s = trim($s);
             // allow letters, digits, dash, dot
-            return $s !== '' && preg_match('/^[A-Za-z0-9\.-]+$/', $s);
+            if ($s !== '' && preg_match('/^[A-Za-z0-9\.-]+$/', $s)) {
+                return $s;
+            }
+            return '';
         }, explode(',', $rawNodes)));
         $out['checkhost_nodes'] = implode(', ', $nodes);
 
@@ -328,10 +331,10 @@ class Vpnpm_Settings {
                 "      list.innerHTML='';\n".
                 "      var selected=input.value.split(',').map(function(s){return s.trim();}).filter(Boolean);\n".
                 "      json.data.nodes.forEach(function(row){\n".
-                "        var host = row && row.host ? row.host : '';\n".
-                "        var label = row && row.label ? row.label : host;\n".
+                "        var host = (row && row.host) ? String(row.host) : '';\n".
+                "        var label = (row && row.label) ? String(row.label) : host;\n".
                 "        var lbl=document.createElement('label'); lbl.style.display='block';\n".
-                "        var cb=document.createElement('input'); cb.type='checkbox'; cb.value=host; if(selected.indexOf(host)!==-1){ cb.checked=true; } cb.addEventListener('change', syncInputFromChecks);\n".
+                "        var cb=document.createElement('input'); cb.type='checkbox'; cb.value=host; cb.checked = selected.some(function(h){ return h===host; }); cb.addEventListener('change', syncInputFromChecks);\n".
                 "        var span=document.createElement('span'); span.textContent=' '+label+' ('+host+')';\n".
                 "        lbl.appendChild(cb); lbl.appendChild(span); list.appendChild(lbl);\n".
                 "      });\n".
