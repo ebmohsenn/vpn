@@ -109,13 +109,20 @@ function vpnpm_checkhost_initiate_ping($target, array $nodes = [], $max_nodes = 
     $endpoint = 'https://check-host.net/check-ping';
     // Build body with repeated node= parameters (official style)
     $pairs = [ 'host=' . rawurlencode($target) ];
+    // If too many nodes are selected, let Check-Host choose a subset to avoid very long requests
+    $nodes = array_values(array_filter(array_map('trim', $nodes)));
+    $include_nodes = count($nodes) > 0 && count($nodes) <= 5;
+    if ($max_nodes === null && !$include_nodes) {
+        $max_nodes = 3; // reasonable default subset
+    }
     if ($max_nodes !== null) {
         $pairs[] = 'max_nodes=' . rawurlencode((string)(int)$max_nodes);
     }
-    foreach ($nodes as $n) {
-        $n = trim((string)$n);
-        if ($n !== '') {
-            $pairs[] = 'node=' . rawurlencode($n);
+    if ($include_nodes) {
+        foreach ($nodes as $n) {
+            if ($n !== '') {
+                $pairs[] = 'node=' . rawurlencode($n);
+            }
         }
     }
     $body = implode('&', $pairs);
