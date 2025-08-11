@@ -1,3 +1,4 @@
+<?php
 // Convert Gregorian timestamp to Jalali (Persian) date. Returns yyyy/mm/dd HH:ii in 24h.
 if (!function_exists('vpnpm_gregorian_to_jalali_datetime')) {
 	function vpnpm_gregorian_to_jalali_datetime($timestamp = null) {
@@ -30,7 +31,6 @@ if (!function_exists('vpnpm_gregorian_to_jalali_datetime')) {
 		return [$jy, $jm, $jd];
 	}
 }
-<?php
 /**
  * Telegram notification helpers for VPN Server Manager.
  *
