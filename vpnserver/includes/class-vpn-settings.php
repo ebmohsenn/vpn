@@ -23,6 +23,7 @@ class Vpnpm_Settings {
 
     public static function defaults() {
         return [
+            'telegram_bot_token' => '',
             'telegram_chat_ids' => '', // comma-separated list
             'enable_cron'       => 1,
             'enable_telegram'   => 1,
@@ -79,6 +80,14 @@ class Vpnpm_Settings {
         );
 
         add_settings_field(
+            'telegram_bot_token',
+            __('Telegram Bot Token', 'vpnserver'),
+            [__CLASS__, 'field_telegram_bot_token'],
+            'vpnpm_settings_page',
+            'vpnpm_settings_section'
+        );
+
+        add_settings_field(
             'telegram_chat_ids',
             __('Telegram Chat IDs', 'vpnserver'),
             [__CLASS__, 'field_telegram_chat_ids'],
@@ -115,6 +124,15 @@ class Vpnpm_Settings {
         $out = self::defaults();
         $in = is_array($input) ? $input : [];
 
+        // Bot token: basic validation (digits:tokenpart)
+        $rawToken = isset($in['telegram_bot_token']) ? (string) $in['telegram_bot_token'] : '';
+        $rawToken = trim(wp_kses_post($rawToken));
+        if ($rawToken !== '' && preg_match('/^[0-9]+:[A-Za-z0-9_\-]{10,}$/', $rawToken)) {
+            $out['telegram_bot_token'] = $rawToken;
+        } else {
+            $out['telegram_bot_token'] = '';
+        }
+
         // Chat IDs: digits and optional leading - for supergroups
         $raw = isset($in['telegram_chat_ids']) ? (string) $in['telegram_chat_ids'] : '';
         $ids = array_filter(array_map('trim', explode(',', $raw)), function($id){
@@ -139,12 +157,24 @@ class Vpnpm_Settings {
         return $out;
     }
 
+    public static function field_telegram_bot_token() {
+        $opts = self::get_settings();
+        printf(
+            '<input type="text" name="%1$s[telegram_bot_token]" value="%2$s" class="regular-text" placeholder="123456789:ABCDEF..." />'
+            . '<p class="description">%3$s</p>',
+            esc_attr(self::OPTION),
+            esc_attr($opts['telegram_bot_token']),
+            esc_html__('Enter your Telegram bot token. Required to send messages.', 'vpnserver')
+        );
+    }
+
     public static function field_telegram_chat_ids() {
         $opts = self::get_settings();
         printf(
-            '<textarea name="%1$s[telegram_chat_ids]" rows="3" cols="50" class="large-text" placeholder="e.g. 12345, -100987654321">%2$s</textarea><p class="description">%3$s</p>',
+            '<input type="text" name="%1$s[telegram_chat_ids]" value="%2$s" class="regular-text" placeholder="12345, -100987654321" />'
+            . '<p class="description">%3$s</p>',
             esc_attr(self::OPTION),
-            esc_textarea($opts['telegram_chat_ids']),
+            esc_attr($opts['telegram_chat_ids']),
             esc_html__('Comma-separated list of Telegram chat IDs (user, group, or channel).', 'vpnserver')
         );
     }

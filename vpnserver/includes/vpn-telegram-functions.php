@@ -2,11 +2,9 @@
 /**
  * Telegram notification helpers for VPN Server Manager.
  *
- * Reads credentials from constants:
- * - VPNSERVER_TELEGRAM_BOT_TOKEN
- * - VPNSERVER_TELEGRAM_CHAT_ID (comma-separated for multiple chat IDs)
- *
- * Define them in wp-config.php or in the plugin bootstrap before using this.
+ * Reads credentials from plugin settings saved by Vpnpm_Settings (vpnpm_settings option):
+ * - telegram_bot_token
+ * - telegram_chat_ids (comma-separated)
  */
 
 defined('ABSPATH') || exit;
@@ -25,8 +23,13 @@ if (!function_exists('vpnpm_send_telegram_message')):
  * @return bool
  */
 function vpnpm_send_telegram_message($message, $chatIds = null, $parse_mode = '') {
-	$token = defined('VPNSERVER_TELEGRAM_BOT_TOKEN') ? trim((string) VPNSERVER_TELEGRAM_BOT_TOKEN) : '';
-	$chats = $chatIds !== null ? trim((string) $chatIds) : (defined('VPNSERVER_TELEGRAM_CHAT_ID') ? trim((string) VPNSERVER_TELEGRAM_CHAT_ID) : '');
+	if (!class_exists('Vpnpm_Settings')) {
+		return false;
+	}
+	$opts = Vpnpm_Settings::get_settings();
+	$token = isset($opts['telegram_bot_token']) ? trim((string) $opts['telegram_bot_token']) : '';
+	$storedChats = isset($opts['telegram_chat_ids']) ? trim((string) $opts['telegram_chat_ids']) : '';
+	$chats = $chatIds !== null ? trim((string) $chatIds) : $storedChats;
 	if ($token === '' || $chats === '') {
 		return false; // Not configured
 	}
