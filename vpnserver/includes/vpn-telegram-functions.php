@@ -214,10 +214,24 @@ function vpnpm_format_vpn_status_message_stylish(array $servers): string {
 		$emoji = $status === 'active' ? "\xF0\x9F\x9F\xA2" : "\xF0\x9F\x94\xB4"; // green or red circle
 		$name = isset($srv['name']) ? $escape_md((string)$srv['name']) : '';
 		$pingVal = isset($srv['ping']) && $srv['ping'] !== null && $srv['ping'] !== '' ? (string)$srv['ping'] : 'N/A';
+		$chPingVal = isset($srv['ch_ping']) && $srv['ch_ping'] !== null && $srv['ch_ping'] !== '' ? (string)$srv['ch_ping'] : 'N/A';
 		$type = isset($srv['type']) ? $escape_md((string)$srv['type']) : '';
 		$loc = isset($srv['location']) ? $escape_md((string)$srv['location']) : '';
-	// Format: Srv03: \| Ping: 108 ms \| premium \| Location (escape '|' for MarkdownV2)
-	$line = sprintf('%s %s: \| Ping: %s ms \| %s \| %s', $emoji, $name, $pingVal, $type, ($loc !== '' ? $loc : ''));
+		$pingChoice = 'server';
+		if (class_exists('Vpnpm_Settings')) {
+			$opts = Vpnpm_Settings::get_settings();
+			$pingChoice = isset($opts['telegram_ping_source']) ? (string)$opts['telegram_ping_source'] : 'server';
+		}
+		$pingPart = '';
+		if ($pingChoice === 'both') {
+			$pingPart = 'Ping S: ' . $escape_md($pingVal) . ' ms \| CH: ' . $escape_md($chPingVal) . ' ms';
+		} elseif ($pingChoice === 'checkhost') {
+			$pingPart = 'Ping: ' . $escape_md($chPingVal) . ' ms';
+		} else {
+			$pingPart = 'Ping: ' . $escape_md($pingVal) . ' ms';
+		}
+		// Format: Name: \| Ping ... \| type \| location
+		$line = sprintf('%s %s: \| %s \| %s \| %s', $emoji, $name, $pingPart, $type, ($loc !== '' ? $loc : ''));
 		$lines[] = $line;
 	}
 	return trim(implode("\n", $lines));

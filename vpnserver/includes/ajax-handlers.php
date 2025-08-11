@@ -11,14 +11,15 @@ function vpnpm_ajax_send_telegram_test() {
 	check_ajax_referer('vpnpm-nonce');
 
        global $wpdb;
-       $table = $wpdb->prefix . 'vpn_profiles';
-	$rows = $wpdb->get_results("SELECT file_name, status, ping, type, location FROM {$table} ORDER BY id ASC");
+		 $table = $wpdb->prefix . 'vpn_profiles';
+	 $rows = $wpdb->get_results("SELECT file_name, status, ping, checkhost_ping_avg, type, location FROM {$table} ORDER BY id ASC");
        $servers_arr = [];
        foreach ((array)$rows as $row) {
 		$servers_arr[] = [
 		       'name' => esc_html(pathinfo((string)$row->file_name, PATHINFO_FILENAME)),
 		       'status' => esc_html(strtolower((string)$row->status)),
-		       'ping' => $row->ping !== null ? (int)$row->ping : null,
+					'ping' => $row->ping !== null ? (int)$row->ping : null,
+				'ch_ping' => isset($row->checkhost_ping_avg) && $row->checkhost_ping_avg !== null ? (int)$row->checkhost_ping_avg : null,
 			'type' => isset($row->type) ? esc_html($row->type) : 'Standard',
 			'location' => isset($row->location) ? esc_html($row->location) : '',
 	       ];
@@ -36,6 +37,90 @@ function vpnpm_ajax_send_telegram_test() {
        }
        $errMsg = $error ? $error : __('Telegram not configured or send failed.', 'vpnserver');
        wp_send_json_error(['message' => $errMsg]);
+}
+endif;
+
+// AJAX: List Check-Host nodes (static curated list for convenience)
+if (!function_exists('vpnpm_ajax_list_checkhost_nodes')):
+add_action('wp_ajax_vpnpm_list_checkhost_nodes', 'vpnpm_ajax_list_checkhost_nodes');
+function vpnpm_ajax_list_checkhost_nodes() {
+	if (!current_user_can('manage_options')) {
+		wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
+	}
+	check_ajax_referer('vpnpm-nonce');
+	// Since Check-Host does not provide an open directory of nodes, offer a configurable sample list.
+	// Admins can paste their own hostnames in settings as needed. These are examples and may change.
+	$nodes = [
+		'ir1.node.check-host.net',
+		'ir2.node.check-host.net',
+		'ir-tehran.node.check-host.net',
+		'ir-mashhad.node.check-host.net',
+		'ae-dubai.node.check-host.net',
+		'tr-istanbul.node.check-host.net',
+	];
+	wp_send_json_success(['nodes' => $nodes]);
+}
+endif;
+
+// AJAX: Get Check-Host detailed results for a server
+if (!function_exists('vpnpm_ajax_get_checkhost_details')):
+add_action('wp_ajax_vpnpm_get_checkhost_details', 'vpnpm_ajax_get_checkhost_details');
+function vpnpm_ajax_get_checkhost_details() {
+	if (!current_user_can('manage_options')) {
+		wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
+	}
+	check_ajax_referer('vpnpm-nonce');
+
+	$id = isset($_REQUEST['id']) ? (int) $_REQUEST['id'] : 0;
+	if (!$id) {
+		wp_send_json_error(['message' => __('Invalid ID', 'vpnserver')], 400);
+	}
+	global $wpdb; $table = $wpdb->prefix . 'vpn_profiles';
+	$row = $wpdb->get_row($wpdb->prepare("SELECT file_name, checkhost_ping_json, checkhost_last_checked FROM {$table} WHERE id = %d", $id));
+	if (!$row) {
+		wp_send_json_error(['message' => __('Profile not found', 'vpnserver')], 404);
+	}
+	if (empty($row->checkhost_ping_json)) {
+		wp_send_json_error(['message' => __('No Check-Host data available yet.', 'vpnserver')]);
+	}
+	$raw = json_decode((string)$row->checkhost_ping_json, true);
+	if (!is_array($raw)) {
+		wp_send_json_error(['message' => __('Invalid stored data.', 'vpnserver')]);
+	}
+	$nodes = [];
+	foreach ($raw as $nodeName => $series) {
+		$samples = 0; $succ = 0; $latencies = [];
+		if (is_array($series)) {
+			foreach ($series as $rowItem) {
+				$samples++;
+				if (is_array($rowItem) && isset($rowItem[1]) && is_array($rowItem[1]) && isset($rowItem[1][0])) {
+					$lat = floatval($rowItem[1][0]) * 1000; // to ms
+					if ($lat > 0) { $latencies[] = $lat; $succ++; }
+				}
+			}
+		}
+		$avg = !empty($latencies) ? round(array_sum($latencies) / count($latencies)) : null;
+		$min = !empty($latencies) ? (int) round(min($latencies)) : null;
+		$max = !empty($latencies) ? (int) round(max($latencies)) : null;
+		$loss = $samples > 0 ? round((($samples - $succ) / $samples) * 100) : null;
+		$nodes[] = [
+			'node' => (string)$nodeName,
+			'avg'  => $avg,
+			'min'  => $min,
+			'max'  => $max,
+			'loss' => $loss,
+			'samples' => $samples,
+		];
+	}
+	usort($nodes, function($a,$b){
+		$av = $a['avg'] ?? PHP_INT_MAX; $bv = $b['avg'] ?? PHP_INT_MAX;
+		return $av <=> $bv;
+	});
+	wp_send_json_success([
+		'server' => pathinfo((string)$row->file_name, PATHINFO_FILENAME),
+		'updated' => $row->checkhost_last_checked ? (string)$row->checkhost_last_checked : null,
+		'nodes' => $nodes,
+	]);
 }
 endif;
 
@@ -326,14 +411,16 @@ function vpnpm_ajax_get_all_status() {
 
     global $wpdb;
     $table = $wpdb->prefix . 'vpn_profiles';
-    $servers = $wpdb->get_results("SELECT id, status, ping, last_checked FROM {$table}");
+	$servers = $wpdb->get_results("SELECT id, status, ping, checkhost_ping_avg, last_checked, checkhost_last_checked FROM {$table}");
 
-    $data = array_map(function($server) {
+	$data = array_map(function($server) {
         return [
             'id'           => (int) $server->id,
             'status'       => esc_html($server->status),
             'ping'         => $server->ping !== null ? (int) $server->ping : null,
+			'ch_ping'      => isset($server->checkhost_ping_avg) && $server->checkhost_ping_avg !== null ? (int)$server->checkhost_ping_avg : null,
             'last_checked' => esc_html($server->last_checked),
+			'ch_last_checked' => isset($server->checkhost_last_checked) ? esc_html($server->checkhost_last_checked) : null,
         ];
     }, $servers);
 

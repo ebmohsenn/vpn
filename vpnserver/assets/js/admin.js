@@ -90,7 +90,7 @@
         if (!$last.length) $last = $('<small class="vpnpm-last-checked" />').appendTo($status.parent());
         if (last) $last.text('Last checked: ' + last);
 
-        const $ping = $card.find('.vpnpm-ping');
+  const $ping = $card.find('.vpnpm-ping-server');
         const newPing = resp && resp.success ? resp.data.ping : null;
         if (newPing !== null) {
           const oldPing = parseInt($ping.text(), 10);
@@ -108,6 +108,61 @@
       const $card = $(this).closest('.vpnpm-card');
       const id = $(this).data('id');
       testServer(id, $card);
+    });
+
+    // More Ping modal handlers
+    function openMorePing(id) {
+      const $modal = $('#vpnpm-moreping-modal');
+      $modal.removeAttr('inert').attr('aria-hidden','false').removeAttr('hidden');
+      $('#vpnpm-moreping-loading').show();
+      $('#vpnpm-moreping-error').hide().text('');
+      $('#vpnpm-moreping-content').hide();
+      $.ajax({
+        url: vpnpmAjax.ajaxurl,
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'vpnpm_get_checkhost_details', _ajax_nonce: vpnpmAjax.nonce, id: id }
+      }).done(function(resp){
+        $('#vpnpm-moreping-loading').hide();
+        if (resp && resp.success && resp.data) {
+          const d = resp.data;
+          $('#vpnpm-moreping-server').text(d.server || '');
+          $('#vpnpm-moreping-updated').text(d.updated || 'N/A');
+          const $nodes = $('#vpnpm-moreping-nodes').empty();
+          if (Array.isArray(d.nodes) && d.nodes.length) {
+            d.nodes.forEach(function(n){
+              const avg = n.avg != null ? n.avg + ' ms' : 'N/A';
+              const min = n.min != null ? n.min + ' ms' : 'N/A';
+              const max = n.max != null ? n.max + ' ms' : 'N/A';
+              const loss = n.loss != null ? n.loss + '%' : 'N/A';
+              const statusClass = (n.avg != null && n.avg <= 120) ? 'badge-green' : (n.avg != null && n.avg <= 250) ? 'badge-blue' : 'badge-red';
+              const $row = $('<div class="vpnpm-node-row" style="display:flex; gap:10px; align-items:center; padding:4px 0;" />');
+              $row.append('<span class="badge '+statusClass+'" title="packet loss: '+loss+'">'+(n.node || '')+'</span>');
+              $row.append('<span>avg: '+avg+'</span>');
+              $row.append('<span>min: '+min+'</span>');
+              $row.append('<span>max: '+max+'</span>');
+              $row.append('<span>loss: '+loss+'</span>');
+              $nodes.append($row);
+            });
+          } else {
+            $nodes.append('<p>No node data.</p>');
+          }
+          $('#vpnpm-moreping-content').show();
+        } else {
+          const m = resp && resp.data && resp.data.message ? resp.data.message : 'Failed to load details.';
+          $('#vpnpm-moreping-error').text(m).show();
+        }
+      }).fail(function(){
+        $('#vpnpm-moreping-loading').hide();
+        $('#vpnpm-moreping-error').text('Failed to load details.').show();
+      });
+    }
+
+    $(document).on('click', '[data-role="vpnpm-more-ping"]', function(){
+      openMorePing($(this).data('id'));
+    });
+    $(document).on('click', '.vpnpm-modal-close[data-close="moreping"], #vpnpm-moreping-modal .vpnpm-modal-backdrop[data-close="moreping"]', function(){
+      $('#vpnpm-moreping-modal').attr('aria-hidden','true').attr('hidden','hidden').attr('inert','');
     });
 
     // Test all servers sequentially
@@ -295,11 +350,20 @@
             $status.removeClass('status-active status-offline status-unknown')
                    .addClass('status-' + server.status);
 
-            const $ping = $card.find('.vpnpm-ping');
+            const $ping = $card.find('.vpnpm-ping-server');
             const oldPing = parseInt($ping.text(), 10);
             if (server.ping !== null && oldPing !== server.ping) {
               $ping.text(server.ping + ' ms').addClass('ping-changed');
               setTimeout(function() { $ping.removeClass('ping-changed'); }, 5000);
+            }
+
+            const $ch = $card.find('.vpnpm-ping-ch');
+            if ($ch.length && server.ch_ping !== undefined) {
+              const oldCh = parseInt($ch.text(), 10);
+              if (server.ch_ping !== null && oldCh !== server.ch_ping) {
+                $ch.text(server.ch_ping + ' ms').addClass('ping-changed');
+                setTimeout(function() { $ch.removeClass('ping-changed'); }, 5000);
+              }
             }
 
             const $lastChecked = $card.find('.vpnpm-last-checked');

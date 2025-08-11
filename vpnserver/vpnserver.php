@@ -28,6 +28,7 @@ require_once VPNSERVER_PLUGIN_DIR . 'includes/class-vpn-settings.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/ajax-handlers.php';
 require_once VPNSERVER_PLUGIN_DIR . 'admin/admin-page.php';
 require_once VPNSERVER_PLUGIN_DIR . 'includes/vpn-telegram-functions.php';
+require_once VPNSERVER_PLUGIN_DIR . 'includes/checkhost.php';
 
 // Telegram functions are now loaded from includes/vpn-telegram-functions.php
 
@@ -122,7 +123,7 @@ function vpnpm_render_dashboard_widget() {
     $table = $wpdb->prefix . 'vpn_profiles';
     // Ensure schema has the 'type' column
     if (function_exists('vpnpm_ensure_schema')) { vpnpm_ensure_schema(); }
-    $servers = $wpdb->get_results("SELECT file_name, status, last_checked, ping, type, location FROM {$table} ORDER BY last_checked DESC");
+    $servers = $wpdb->get_results("SELECT file_name, status, last_checked, ping, checkhost_ping_avg, type, location FROM {$table} ORDER BY last_checked DESC");
 
     if (empty($servers)) {
         echo '<p>' . esc_html__('No VPN servers found.', 'vpnserver') . '</p>';
@@ -136,7 +137,8 @@ function vpnpm_render_dashboard_widget() {
     echo '<th>' . esc_html__('Type', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Location', 'vpnserver') . '</th>';
     echo '<th>' . esc_html__('Last Checked', 'vpnserver') . '</th>';
-    echo '<th>' . esc_html__('Ping (ms)', 'vpnserver') . '</th>';
+    echo '<th>' . esc_html__('Ping S (ms)', 'vpnserver') . '</th>';
+    echo '<th>' . esc_html__('Ping CH (ms)', 'vpnserver') . '</th>';
     echo '</tr></thead><tbody>';
 
     foreach ($servers as $server) {
@@ -163,6 +165,8 @@ function vpnpm_render_dashboard_widget() {
                 $ts = $server->last_checked ? (int) strtotime($server->last_checked) : 0;
                 echo '<td title="' . esc_attr($server->last_checked) . '" data-timestamp="' . esc_attr($ts) . '">' . esc_html($relative_time) . ' ago</td>';
     echo '<td>' . ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')) . '</td>';
+    $chv = isset($server->checkhost_ping_avg) ? $server->checkhost_ping_avg : null;
+    echo '<td>' . ($chv !== null ? esc_html((int)$chv) . ' ms' : esc_html__('N/A', 'vpnserver')) . '</td>';
     echo '</tr>';
     }
 
@@ -180,15 +184,17 @@ function vpnpm_render_dashboard_widget() {
                 0: (a,b) => a.localeCompare(b, undefined, {sensitivity:"base"}),
                 1: (a,b) => getStatusOrder(a) - getStatusOrder(b),
                 2: (a,b) => getTypeOrder(a) - getTypeOrder(b),
-                3: (a,b) => (parseInt(a,10)||0) - (parseInt(b,10)||0),
-                4: (a,b) => (a===Infinity?Number.POSITIVE_INFINITY:a) - (b===Infinity?Number.POSITIVE_INFINITY:b)
+                4: (a,b) => (parseInt(a,10)||0) - (parseInt(b,10)||0), // timestamp
+                5: (a,b) => (parseInt(a,10)||0) - (parseInt(b,10)||0), // server ping
+                6: (a,b) => (parseInt(a,10)||0) - (parseInt(b,10)||0), // CH ping
             };
             const valueExtractors = {
                 0: (row) => row.children[0].textContent.trim(),
                 1: (row) => row.children[1].textContent.trim(),
                 2: (row) => row.children[2].textContent.trim(),
-                3: (row) => row.children[3].getAttribute("data-timestamp") || "0",
-                4: (row) => parsePing(row.children[4].textContent)
+                4: (row) => row.children[4].getAttribute("data-timestamp") || "0",
+                5: (row) => parsePing(row.children[5].textContent),
+                6: (row) => parsePing(row.children[6].textContent),
             };
             const setAria = (ths, activeIdx, dir) => {
                 ths.forEach((th,i)=>{
@@ -253,39 +259,95 @@ add_action('vpnpm_test_all_servers_cron', 'vpnpm_test_all_servers');
 function vpnpm_test_all_servers() {
     global $wpdb;
     $table = $wpdb->prefix . 'vpn_profiles';
-    $servers = $wpdb->get_results("SELECT id, file_name, remote_host, port, status, ping, type, location FROM {$table}");
+    $servers = $wpdb->get_results("SELECT id, file_name, remote_host, port, status, ping, type, location, checkhost_last_checked FROM {$table}");
+
+    $opts = class_exists('Vpnpm_Settings') ? Vpnpm_Settings::get_settings() : [];
+    $ping_source = isset($opts['ping_source']) ? $opts['ping_source'] : 'server';
+    $node_str = isset($opts['checkhost_nodes']) ? (string)$opts['checkhost_nodes'] : '';
+    $nodes = array_values(array_filter(array_map('trim', explode(',', $node_str))));
 
     // Update statuses and pings
     foreach ($servers as $server) {
-        $ping = vpnpm_get_server_ping($server->remote_host, $server->port);
-        $status = $ping !== false ? 'active' : 'down';
-        $now = current_time('mysql');
+        if ($ping_source === 'checkhost' && function_exists('vpnpm_checkhost_initiate_ping')) {
+            // Skip frequent checks: reuse existing CH value if checked within last 5 minutes
+            $recent = false;
+            if (!empty($server->checkhost_last_checked)) {
+                $last = strtotime($server->checkhost_last_checked);
+                if ($last && (current_time('timestamp') - $last) < 5 * 60) {
+                    $recent = true;
+                }
+            }
 
-        $wpdb->update(
-            $table,
-            [
+            // Initiate Check-Host ping and poll result with small retries
+            $avg = null; $raw = null; $status = 'down';
+            if (!$recent) {
+                list($init, $err) = vpnpm_checkhost_initiate_ping($server->remote_host, $nodes);
+                if ($init && isset($init['request_id'])) {
+                    $request_id = $init['request_id'];
+                    $attempts = 0; $max_attempts = 8; // ~ a few seconds total
+                    do {
+                        vpnpm_checkhost_rate_limit_sleep();
+                        list($res, $perr) = vpnpm_checkhost_poll_result($request_id);
+                        $attempts++;
+                        if ($res && is_array($res)) {
+                            $raw = $res;
+                            $avg = vpnpm_checkhost_aggregate_ping_ms($res);
+                            // Some nodes may yet be pending; break if we have at least something
+                            if ($avg !== null || $attempts >= $max_attempts) {
+                                break;
+                            }
+                        }
+                    } while ($attempts < $max_attempts);
+                }
+                // Store results
+                vpnpm_store_checkhost_result($server->id, $avg, $raw);
+            } else {
+                // Leave existing value as-is, fetch for telegram summary
+                $avg = $wpdb->get_var($wpdb->prepare("SELECT checkhost_ping_avg FROM {$table} WHERE id = %d", $server->id));
+            }
+            // Also compute server-local ping for fallback and UI dual display
+            $local_ping = vpnpm_get_server_ping($server->remote_host, $server->port);
+            $status = ($local_ping !== false || $avg !== null) ? 'active' : 'down';
+            $now = current_time('mysql');
+            $wpdb->update($table, [
                 'status'       => $status,
                 'last_checked' => $now,
-                'ping'         => $ping !== false ? $ping : null,
-            ],
-            ['id' => $server->id],
-            ['%s', '%s', '%d'],
-            ['%d']
-        );
+                'ping'         => $local_ping !== false ? $local_ping : null,
+            ], ['id' => $server->id], ['%s','%s','%d'], ['%d']);
 
-        // Update in-memory for summary
-        $server->status = $status;
-        $server->ping = $ping !== false ? $ping : null;
+            $server->status = $status;
+            $server->ping = $local_ping !== false ? $local_ping : null;
+            $server->checkhost_ping_avg = $avg;
+        } else {
+            $ping = vpnpm_get_server_ping($server->remote_host, $server->port);
+            $status = $ping !== false ? 'active' : 'down';
+            $now = current_time('mysql');
+            $wpdb->update(
+                $table,
+                [
+                    'status'       => $status,
+                    'last_checked' => $now,
+                    'ping'         => $ping !== false ? $ping : null,
+                ],
+                ['id' => $server->id],
+                ['%s', '%s', '%d'],
+                ['%d']
+            );
+            $server->status = $status;
+            $server->ping = $ping !== false ? $ping : null;
+            $server->checkhost_ping_avg = null;
+        }
     }
 
     // Fetch updated servers for summary
-    $rows = $wpdb->get_results("SELECT file_name, status, ping, type, location FROM {$table}");
+    $rows = $wpdb->get_results("SELECT file_name, status, ping, checkhost_ping_avg, type, location FROM {$table}");
     $servers_arr = [];
     foreach ($rows as $row) {
         $servers_arr[] = [
             'name' => esc_html(pathinfo((string)$row->file_name, PATHINFO_FILENAME)),
             'status' => esc_html(strtolower((string)$row->status)),
             'ping' => $row->ping !== null ? (int)$row->ping : null,
+            'ch_ping' => isset($row->checkhost_ping_avg) && $row->checkhost_ping_avg !== null ? (int)$row->checkhost_ping_avg : null,
             'type' => isset($row->type) ? esc_html($row->type) : 'Standard',
             'location' => isset($row->location) ? esc_html($row->location) : '',
         ];

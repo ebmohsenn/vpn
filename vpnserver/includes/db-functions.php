@@ -26,6 +26,9 @@ function vpnpm_create_tables() {
 		type varchar(20) DEFAULT 'standard',
 		label varchar(20) DEFAULT 'standard',
 		location varchar(191) DEFAULT NULL,
+		checkhost_ping_avg int(11) DEFAULT NULL,
+		checkhost_ping_json longtext NULL,
+		checkhost_last_checked datetime DEFAULT NULL,
 		notes text NULL,
 		last_checked datetime DEFAULT NULL,
 		created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -57,6 +60,19 @@ function vpnpm_ensure_schema() {
 	$has_location = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", 'location'));
 	if (!$has_location) {
 		$wpdb->query("ALTER TABLE {$table} ADD COLUMN location varchar(191) DEFAULT NULL AFTER label");
+	}
+	// Check Check-Host columns
+	$has_ch_avg = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", 'checkhost_ping_avg'));
+	if (!$has_ch_avg) {
+		$wpdb->query("ALTER TABLE {$table} ADD COLUMN checkhost_ping_avg int(11) DEFAULT NULL AFTER location");
+	}
+	$has_ch_json = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", 'checkhost_ping_json'));
+	if (!$has_ch_json) {
+		$wpdb->query("ALTER TABLE {$table} ADD COLUMN checkhost_ping_json longtext NULL AFTER checkhost_ping_avg");
+	}
+	$has_ch_ts = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", 'checkhost_last_checked'));
+	if (!$has_ch_ts) {
+		$wpdb->query("ALTER TABLE {$table} ADD COLUMN checkhost_last_checked datetime DEFAULT NULL AFTER checkhost_ping_json");
 	}
 }
 endif;
@@ -115,7 +131,7 @@ function vpnpm_get_all_profiles() {
 	global $wpdb;
 	$table = vpnpm_table_name();
 	vpnpm_ensure_schema();
-	return $wpdb->get_results("SELECT id, file_name, remote_host, port, protocol, status, ping, type, label, location, last_checked FROM {$table}");
+	return $wpdb->get_results("SELECT id, file_name, remote_host, port, protocol, status, ping, type, label, location, checkhost_ping_avg, checkhost_last_checked, last_checked FROM {$table}");
 }
 endif;
 

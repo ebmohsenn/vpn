@@ -100,13 +100,17 @@ $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 					<p>Last checked: <span class="vpnpm-last-checked" title="<?php echo esc_attr($server->last_checked); ?>">
 						<?php echo esc_html($last_checked_human); ?>
 					</span></p>
-					<p>Ping: <span class="vpnpm-ping"><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
+					<p>Ping (Server): <span class="vpnpm-ping-server"><?php echo ($server->ping !== null ? esc_html($server->ping) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
+					<?php if (property_exists($server, 'checkhost_ping_avg')): ?>
+					<p>Ping (Check-Host): <span class="vpnpm-ping-ch"><?php echo ($server->checkhost_ping_avg !== null ? esc_html((int)$server->checkhost_ping_avg) . ' ms' : esc_html__('N/A', 'vpnserver')); ?></span></p>
+					<?php endif; ?>
 					<p>Notes: <?php echo $notes; ?></p>
 					<div>
 						<button class="vpn-btn vpn-btn-secondary vpnpm-test-btn" data-id="<?php echo (int)$server->id; ?>">Test</button>
 						<a class="vpn-btn vpn-btn-primary" href="<?php echo esc_url($download_url); ?>">Download Config</a>
 						<button class="vpn-btn vpnpm-edit-btn" data-id="<?php echo (int)$server->id; ?>">Edit</button>
 						<button class="vpn-btn vpn-btn-danger vpnpm-delete-btn" data-id="<?php echo (int)$server->id; ?>">Delete</button>
+						<button class="vpn-btn" data-role="vpnpm-more-ping" data-id="<?php echo (int)$server->id; ?>">More Ping</button>
 					</div>
 				</div>
 				<?php endforeach; ?>
@@ -199,6 +203,26 @@ $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 						<button type="submit" class="button button-primary vpnpm-btn-primary"><?php esc_html_e('Save Changes', 'vpnserver'); ?></button>
 					</div>
 				</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- More Ping Modal -->
+	<div class="vpnpm-modal" id="vpnpm-moreping-modal" aria-hidden="true" hidden>
+		<div class="vpnpm-modal-backdrop" data-close="moreping"></div>
+		<div class="vpnpm-modal-content" role="dialog" aria-modal="true" aria-labelledby="vpnpm-moreping-title">
+			<div class="vpnpm-modal-header">
+				<h2 id="vpnpm-moreping-title">Check-Host Details</h2>
+				<button type="button" class="vpnpm-modal-close" data-close="moreping">&times;</button>
+			</div>
+			<div class="vpnpm-modal-body">
+				<div id="vpnpm-moreping-loading" style="padding:8px;">Loading...</div>
+				<div id="vpnpm-moreping-error" class="notice notice-error" style="display:none"></div>
+				<div id="vpnpm-moreping-content" style="display:none">
+					<p><strong id="vpnpm-moreping-server"></strong></p>
+					<p>Last update: <span id="vpnpm-moreping-updated"></span></p>
+					<div id="vpnpm-moreping-nodes"></div>
+				</div>
 			</div>
 		</div>
 	</div>

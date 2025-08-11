@@ -29,6 +29,9 @@ class Vpnpm_Settings {
             'enable_telegram'   => 1,
             'cron_interval'     => '10', // minutes: '5','10','15'
             'telegram_time_mode'=> 'jalali', // 'jalali' or 'system'
+            'ping_source'       => 'server', // 'server' or 'checkhost'
+            'checkhost_nodes'   => '', // comma-separated node codes
+            'telegram_ping_source' => 'server', // 'server','checkhost','both'
         ];
     }
 
@@ -127,6 +130,30 @@ class Vpnpm_Settings {
             'vpnpm_settings_page',
             'vpnpm_settings_section'
         );
+
+        add_settings_field(
+            'ping_source',
+            __('Ping Source', 'vpnserver'),
+            [__CLASS__, 'field_ping_source'],
+            'vpnpm_settings_page',
+            'vpnpm_settings_section'
+        );
+
+        add_settings_field(
+            'checkhost_nodes',
+            __('Check-Host Nodes', 'vpnserver'),
+            [__CLASS__, 'field_checkhost_nodes'],
+            'vpnpm_settings_page',
+            'vpnpm_settings_section'
+        );
+
+        add_settings_field(
+            'telegram_ping_source',
+            __('Telegram Ping Source', 'vpnserver'),
+            [__CLASS__, 'field_telegram_ping_source'],
+            'vpnpm_settings_page',
+            'vpnpm_settings_section'
+        );
     }
 
     public static function sanitize_settings($input) {
@@ -159,6 +186,23 @@ class Vpnpm_Settings {
     // Telegram time mode
     $tm = isset($in['telegram_time_mode']) ? (string)$in['telegram_time_mode'] : 'jalali';
     $out['telegram_time_mode'] = in_array($tm, ['jalali','system'], true) ? $tm : 'jalali';
+
+        // Ping source
+        $ps = isset($in['ping_source']) ? (string)$in['ping_source'] : 'server';
+        $out['ping_source'] = in_array($ps, ['server','checkhost'], true) ? $ps : 'server';
+
+        // Check-Host nodes: comma-separated codes/hostnames; sanitize as simple list
+        $rawNodes = isset($in['checkhost_nodes']) ? (string)$in['checkhost_nodes'] : '';
+        $nodes = array_filter(array_map(function($s){
+            $s = trim($s);
+            // allow letters, digits, dash, dot
+            return $s !== '' && preg_match('/^[A-Za-z0-9\.-]+$/', $s);
+        }, explode(',', $rawNodes)));
+        $out['checkhost_nodes'] = implode(', ', $nodes);
+
+        // Telegram ping source
+        $tps = isset($in['telegram_ping_source']) ? (string)$in['telegram_ping_source'] : 'server';
+        $out['telegram_ping_source'] = in_array($tps, ['server','checkhost','both'], true) ? $tps : 'server';
 
         // Reschedule when settings change
         add_action('updated_option', function($option, $old, $new){
@@ -233,6 +277,74 @@ class Vpnpm_Settings {
         echo '<label><input type="radio" name="' . esc_attr(self::OPTION) . '[telegram_time_mode]" value="jalali" ' . checked($val, 'jalali', false) . '> ' . esc_html__('Jalali (Persian calendar)', 'vpnserver') . '</label><br />';
         echo '<label><input type="radio" name="' . esc_attr(self::OPTION) . '[telegram_time_mode]" value="system" ' . checked($val, 'system', false) . '> ' . esc_html__('System timezone (site setting)', 'vpnserver') . '</label>';
         echo '<p class="description">' . esc_html__('Choose how the time is displayed in Telegram messages.', 'vpnserver') . '</p>';
+    }
+
+    public static function field_ping_source() {
+        $opts = self::get_settings();
+        $val = isset($opts['ping_source']) ? (string)$opts['ping_source'] : 'server';
+        echo '<label><input type="radio" name="' . esc_attr(self::OPTION) . '[ping_source]" value="server" ' . checked($val, 'server', false) . '> ' . esc_html__('Server Location', 'vpnserver') . '</label><br />';
+        echo '<label><input type="radio" name="' . esc_attr(self::OPTION) . '[ping_source]" value="checkhost" ' . checked($val, 'checkhost', false) . '> ' . esc_html__('Check-Host.net', 'vpnserver') . '</label>';
+        echo '<p class="description">' . esc_html__('Choose where pings are measured from.', 'vpnserver') . '</p>';
+        echo '<script>document.addEventListener("DOMContentLoaded",function(){var ph=document.querySelector("[name=\"' . esc_js(self::OPTION) . '[ping_source]\"]:checked");function tog(){var s=document.querySelector("#vpnpm-checkhost-nodes-wrap");if(!s)return; s.style.display=(document.querySelector("[name=\"' . esc_js(self::OPTION) . '[ping_source]\"]:checked").value==="checkhost")?"block":"none";}document.querySelectorAll("[name=\"' . esc_js(self::OPTION) . '[ping_source]\"]").forEach(function(r){r.addEventListener("change",tog)});tog();});</script>';
+    }
+
+    public static function field_checkhost_nodes() {
+        $opts = self::get_settings();
+        $val = isset($opts['checkhost_nodes']) ? (string)$opts['checkhost_nodes'] : '';
+                echo '<div id="vpnpm-checkhost-nodes-wrap">';
+                echo '<input type="text" class="regular-text" id="vpnpm-checkhost-nodes-input" name="' . esc_attr(self::OPTION) . '[checkhost_nodes]" value="' . esc_attr($val) . '" placeholder="ir1.node.check-host.net, ir2.node.check-host.net" />';
+                echo '<p class="description">' . esc_html__('Comma-separated Check-Host node hostnames. Or click Load Nodes to pick from a list.', 'vpnserver') . '</p>';
+                echo '<p><button type="button" class="button" id="vpnpm-load-checkhost-nodes">' . esc_html__('Load Nodes', 'vpnserver') . '</button></p>';
+                echo '<div id="vpnpm-checkhost-node-list" style="max-height:200px; overflow:auto; border:1px solid #ccd0d4; padding:8px; display:none"></div>';
+                echo '</div>';
+                echo "<script>(function(){\n".
+                "var btn=document.getElementById('vpnpm-load-checkhost-nodes');\n".
+                "var list=document.getElementById('vpnpm-checkhost-node-list');\n".
+                "var input=document.getElementById('vpnpm-checkhost-nodes-input');\n".
+                "if(!btn||!list||!input){return;}\n".
+                "function syncInputFromChecks(){\n".
+                "  var checks=list.querySelectorAll('input[type=checkbox]:checked');\n".
+                "  input.value=Array.prototype.map.call(checks,function(c){return c.value;}).join(', ');\n".
+                "}\n".
+                "btn.addEventListener('click', function(){\n".
+                "  btn.disabled=true; btn.textContent='" . esc_js(__('Loading...', 'vpnserver')) . "';\n".
+                "  var data=new URLSearchParams();\n".
+                "  data.append('action','vpnpm_list_checkhost_nodes');\n".
+                "  data.append('_ajax_nonce','" . esc_js(wp_create_nonce('vpnpm-nonce')) . "');\n".
+                "  fetch(ajaxurl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()})\n".
+                "    .then(function(r){ return r.json(); })\n".
+                "    .then(function(json){\n".
+                "      btn.disabled=false; btn.textContent='" . esc_js(__('Reload Nodes', 'vpnserver')) . "';\n".
+                "      if(!json||!json.success||!json.data||!Array.isArray(json.data.nodes)){ alert('Failed to load nodes'); return; }\n".
+                "      list.innerHTML='';\n".
+                "      var selected=input.value.split(',').map(function(s){return s.trim();}).filter(Boolean);\n".
+                "      json.data.nodes.forEach(function(n){\n".
+                "        var lbl=document.createElement('label'); lbl.style.display='block';\n".
+                "        var cb=document.createElement('input'); cb.type='checkbox'; cb.value=n; if(selected.indexOf(n)!==-1){ cb.checked=true; } cb.addEventListener('change', syncInputFromChecks);\n".
+                "        var span=document.createElement('span'); span.textContent=' '+n;\n".
+                "        lbl.appendChild(cb); lbl.appendChild(span); list.appendChild(lbl);\n".
+                "      });\n".
+                "      list.style.display='block';\n".
+                "    })\n".
+                "    .catch(function(){ btn.disabled=false; btn.textContent='" . esc_js(__('Load Nodes', 'vpnserver')) . "'; alert('Failed to load nodes'); });\n".
+                "});\n".
+                "})();</script>";
+    }
+
+    public static function field_telegram_ping_source() {
+        $opts = self::get_settings();
+        $val = isset($opts['telegram_ping_source']) ? (string)$opts['telegram_ping_source'] : 'server';
+        echo '<select name="' . esc_attr(self::OPTION) . '[telegram_ping_source]">';
+        $choices = [
+            'server'    => __('Server ping', 'vpnserver'),
+            'checkhost' => __('Check-Host ping', 'vpnserver'),
+            'both'      => __('Both', 'vpnserver'),
+        ];
+        foreach ($choices as $k=>$label) {
+            printf('<option value="%s" %s>%s</option>', esc_attr($k), selected($val,$k,false), esc_html($label));
+        }
+        echo '</select>';
+        echo '<p class="description">' . esc_html__('Which ping to include in Telegram notifications.', 'vpnserver') . '</p>';
     }
 
     public function render_settings_page() {
