@@ -1,0 +1,18 @@
+.wrap .widefat.hovpnm-table {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+.wrap .widefat.hovpnm-table th,
+.wrap .widefat.hovpnm-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ddd;
+  vertical-align: middle;
+}
+.wrap .widefat.hovpnm-table thead th {
+  background: #f6f7f7;
+  font-weight: 600;
+}
+.wrap .widefat.hovpnm-table td .button {
+  margin-right: 6px;
+}

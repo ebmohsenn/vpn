@@ -8,7 +8,7 @@ $actions = ColumnsRegistry::$actions;
 ?>
 <div class="wrap">
   <h1><?php echo esc_html__('HO VPN Manager', 'hovpnm'); ?></h1>
-  <table class="widefat fixed striped">
+  <table class="widefat fixed striped hovpnm-table">
     <thead>
       <tr>
         <th><?php esc_html_e('Name','hovpnm'); ?></th>
