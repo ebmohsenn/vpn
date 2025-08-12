@@ -160,6 +160,15 @@ function vpnpm_ajax_test_server() {
 	if (function_exists('vpnpm_insert_ping_history')) {
 		vpnpm_insert_ping_history($id, $ping_ms, 'server');
 	}
+	// Location update: if empty or auto-update enabled
+	$opts = function_exists('Vpnpm_Settings::get_settings') ? Vpnpm_Settings::get_settings() : (class_exists('Vpnpm_Settings') ? Vpnpm_Settings::get_settings() : []);
+	$auto_update = !empty($opts['auto_update_location']);
+	$current_location = isset($profile->location) ? trim($profile->location) : '';
+	if ($auto_update || $current_location === '') {
+		if (function_exists('vpnpm_update_server_location')) {
+			vpnpm_update_server_location($id, $host);
+		}
+	}
 	wp_send_json_success([
 		'id'           => $id,
 		'status'       => $status,

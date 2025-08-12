@@ -32,6 +32,7 @@ class Vpnpm_Settings {
             'ping_source'       => 'server', // 'server' or 'checkhost'
             'checkhost_nodes'   => '', // deprecated, use Settings > VPN Server Manager Settings for node selection
             'telegram_ping_source' => 'server', // 'server','checkhost','both'
+            'auto_update_location' => 0, // new: auto update location on ping
         ];
     }
 
@@ -148,12 +149,27 @@ class Vpnpm_Settings {
         );
 
         add_settings_field(
+            'auto_update_location',
+            __('Auto Update Location', 'vpnserver'),
+            [__CLASS__, 'field_auto_update_location'],
+            'vpnpm_settings_page',
+            'vpnpm_settings_section'
+        );
+
+        add_settings_field(
             'telegram_ping_source',
             __('Telegram Ping Source', 'vpnserver'),
             [__CLASS__, 'field_telegram_ping_source'],
             'vpnpm_settings_page',
             'vpnpm_settings_section'
         );
+
+
+    public static function field_auto_update_location() {
+        $opts = self::get_settings();
+        $checked = !empty($opts['auto_update_location']);
+        echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION) . '[auto_update_location]" value="1" ' . checked($checked, true, false) . '> ' . esc_html__('Automatically update server location on ping', 'vpnserver') . '</label>';
+    }
     }
 
     public static function sanitize_settings($input) {

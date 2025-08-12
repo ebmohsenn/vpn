@@ -279,6 +279,15 @@ function vpnpm_test_all_servers() {
 
     // Update statuses and pings
     foreach ($servers as $server) {
+        // Location update: if empty or auto-update enabled
+        $opts = class_exists('Vpnpm_Settings') ? Vpnpm_Settings::get_settings() : [];
+        $auto_update = !empty($opts['auto_update_location']);
+        $current_location = isset($server->location) ? trim($server->location) : '';
+        if ($auto_update || $current_location === '') {
+            if (function_exists('vpnpm_update_server_location')) {
+                vpnpm_update_server_location($server->id, $server->remote_host);
+            }
+        }
         if ($ping_source === 'checkhost' && function_exists('vpnpm_checkhost_initiate_ping')) {
             // Skip frequent checks: reuse existing CH value if checked within last 5 minutes
             $recent = false;

@@ -1,3 +1,22 @@
+// Update server location using ip-api.com (country - city)
+if (!function_exists('vpnpm_update_server_location')):
+function vpnpm_update_server_location($profile_id, $ip) {
+	global $wpdb;
+	$table = vpnpm_table_name();
+	$profile_id = (int)$profile_id;
+	$ip = trim((string)$ip);
+	if (!$ip || !$profile_id) return false;
+	$url = 'http://ip-api.com/json/' . rawurlencode($ip) . '?fields=country,city';
+	$resp = wp_remote_get($url, ['timeout' => 8]);
+	if (is_wp_error($resp) || wp_remote_retrieve_response_code($resp) !== 200) return false;
+	$data = json_decode(wp_remote_retrieve_body($resp), true);
+	if (!is_array($data) || empty($data['country']) || empty($data['city'])) return false;
+	$location = trim($data['country'] . ' - ' . $data['city']);
+	if ($location === '-') return false;
+	$wpdb->update($table, ['location' => $location], ['id' => $profile_id], ['%s'], ['%d']);
+	return $location;
+}
+endif;
 <?php
 defined('ABSPATH') || exit;
 
