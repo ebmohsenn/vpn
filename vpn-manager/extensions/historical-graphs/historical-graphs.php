@@ -6,7 +6,7 @@ require_once __DIR__ . '/rest.php';
 
 use function HOVPNM\Core\register_server_column;
 
-add_action('plugins_loaded', function(){
+add_action('init', function(){
     register_server_column('graphs', __('History','hovpnm'), __NAMESPACE__ . '\\col_graphs');
 });
 

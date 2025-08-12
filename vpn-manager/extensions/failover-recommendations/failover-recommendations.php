@@ -7,7 +7,7 @@ use HOVPNM\Core\Servers;
 use function HOVPNM\Core\register_server_column;
 
 // Register column
-add_action('plugins_loaded', function(){
+add_action('init', function(){
     register_server_column('failover', __('Failover','hovpnm'), __NAMESPACE__ . '\col_failover');
 });
 

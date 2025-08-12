@@ -3,7 +3,7 @@ namespace HOVPNM\Core;
 if (!defined('ABSPATH')) { exit; }
 
 // Default columns
-add_action('plugins_loaded', function(){
+add_action('init', function(){
     register_server_column('status', __('Status','hovpnm'), function($s){
         $st = isset($s->status) ? strtolower($s->status) : 'unknown';
         $class = $st === 'active' ? 'color:green;' : ($st === 'down' ? 'color:#a00;' : 'color:#555;');

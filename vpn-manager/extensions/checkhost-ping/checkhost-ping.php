@@ -8,7 +8,7 @@ require_once __DIR__ . '/admin-ui.php';
 use function HOVPNM\Core\register_server_column;
 use function HOVPNM\Core\add_server_action;
 
-add_action('plugins_loaded', function(){
+add_action('init', function(){
     register_server_column('ch_ping', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\col_ch_ping');
     add_server_action(__('More Ping','hovpnm'), __NAMESPACE__ . '\\action_more_ping');
 });
