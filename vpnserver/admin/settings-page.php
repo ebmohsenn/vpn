@@ -2,6 +2,7 @@
 defined('ABSPATH') || exit;
 
 // Register settings page under the plugin menu (VPN Manager) per requirement
+// Use a later priority so the "Plugin Settings" submenu (added at prio 30) stays first
 add_action('admin_menu', function() {
     add_submenu_page(
         'vpmgr',
@@ -11,6 +12,15 @@ add_action('admin_menu', function() {
         'vpnsm-settings',
         'vpnsm_settings_page'
     );
+}, 40);
+
+// Safety redirect: if an environment links to /wp-admin/vpnsm-settings, redirect to the proper admin.php?page= URL
+add_action('admin_init', function(){
+    $req = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+    if ($req && strpos($req, '/wp-admin/vpnsm-settings') !== false) {
+        wp_safe_redirect(admin_url('admin.php?page=vpnsm-settings'));
+        exit;
+    }
 });
 
 // Render settings page

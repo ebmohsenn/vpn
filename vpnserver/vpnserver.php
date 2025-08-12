@@ -66,8 +66,9 @@ add_action('admin_enqueue_scripts', 'vpnserver_admin_assets');
 function vpnserver_admin_assets($hook) {
     // Ensure scripts load on our admin page and its subpages
     if (
-        strpos((string)$hook, 'vpmgr') === false
-        && strpos((string)$hook, 'settings_page_vpnsm-settings') === false
+        (strpos((string)$hook, 'vpmgr') === false)
+        && (strpos((string)$hook, 'vpnsm-settings') === false)
+        && (strpos((string)$hook, 'vpn-manager-settings') === false)
     ) {
         return;
     }
