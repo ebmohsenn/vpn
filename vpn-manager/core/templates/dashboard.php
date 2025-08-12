@@ -68,6 +68,7 @@ $actions = ColumnsRegistry::$actions;
         </p>
       </form>
   </div>
+  </div>
   <table class="widefat fixed striped hovpnm-table">
     <thead>
       <tr>
