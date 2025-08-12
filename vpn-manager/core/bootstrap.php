@@ -10,6 +10,7 @@ require_once __DIR__ . '/server-functions.php';
 require_once __DIR__ . '/admin-menu.php';
 require_once __DIR__ . '/columns.php';
 require_once __DIR__ . '/rest-api.php';
+require_once __DIR__ . '/uploads.php';
 
 class Bootstrap {
     public static function load_extensions() {
