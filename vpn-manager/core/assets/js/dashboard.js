@@ -11,7 +11,6 @@
     m.find('[name=protocol]').val(b.data('protocol'));
     m.find('[name=cipher]').val(b.data('cipher'));
     m.find('[name=type]').val(b.data('type'));
-    m.find('[name=label]').val(b.data('label'));
     m.find('[name=location]').val(b.data('location'));
     m.find('[name=notes]').val(b.data('notes'));
     openModal();
@@ -21,7 +20,7 @@
 
   $(document).on('submit', '#hovpnm-edit-form', function(e){
     e.preventDefault(); var f=$(this), id=f.find('[name=id]').val();
-    var payload={}; ['file_name','remote_host','port','protocol','cipher','type','label','location','notes'].forEach(function(k){ payload[k]=f.find('[name='+k+']').val(); });
+  var payload={}; ['file_name','remote_host','port','protocol','cipher','type','location','notes'].forEach(function(k){ payload[k]=f.find('[name='+k+']').val(); });
     if(payload.port==='') delete payload.port;
     var url=HOVPNM_DASH.apiBase+id;
     $.ajax({ url:url, method:'POST', contentType:'application/json', data: JSON.stringify(payload), beforeSend:function(xhr){ xhr.setRequestHeader('X-WP-Nonce', HOVPNM_DASH.nonce); } })
@@ -30,5 +29,11 @@
         closeModal(); setTimeout(function(){ location.reload(); }, 300);
       })
       .fail(function(){ alert(HOVPNM_DASH.msgFail); });
+  });
+})(jQuery);
+
+(function($){
+  $(document).on('submit', 'form[action$="admin-post.php"]:has(input[name=action][value=hovpnm_delete_server])', function(e){
+    if(!confirm('Delete this server?')) { e.preventDefault(); }
   });
 })(jQuery);

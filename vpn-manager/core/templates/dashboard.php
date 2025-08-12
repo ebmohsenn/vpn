@@ -95,6 +95,12 @@ $actions = ColumnsRegistry::$actions;
               </a>
             <?php endif; ?>
           <?php endforeach; ?>
+          <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block; margin-left:4px;">
+            <input type="hidden" name="action" value="hovpnm_delete_server" />
+            <input type="hidden" name="id" value="<?php echo (int)$s->id; ?>" />
+            <?php wp_nonce_field('hovpnm_delete_server_' . (int)$s->id); ?>
+            <button type="submit" class="button button-link-delete hovpnm-delete-btn"><?php esc_html_e('Delete','hovpnm'); ?></button>
+          </form>
         </td>
       </tr>
       <?php endforeach; else: ?>
