@@ -26,6 +26,7 @@ $actions = ColumnsRegistry::$actions;
         <td><?php if (is_callable($col['cb'])) { echo wp_kses_post(call_user_func($col['cb'], $s)); } ?></td>
         <?php endforeach; ?>
         <td>
+          <a href="<?php echo esc_url(admin_url('admin.php?page=hovpnm-edit-server&id=' . (int)$s->id)); ?>" class="button button-secondary"><?php esc_html_e('Edit','hovpnm'); ?></a>
           <?php foreach ($actions as $act): ?>
             <?php if (is_callable($act['cb'])): ?>
               <a href="#" class="button" data-id="<?php echo (int)$s->id; ?>"><?php echo esc_html($act['label']); ?></a>

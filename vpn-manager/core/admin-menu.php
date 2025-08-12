@@ -14,6 +14,7 @@ add_action('admin_menu', function() {
     );
     add_submenu_page('hovpnm', __('Extensions','hovpnm'), __('Extensions','hovpnm'), 'manage_options', 'hovpnm-extensions', __NAMESPACE__ . '\\render_extensions');
     add_submenu_page('hovpnm', __('Add Server','hovpnm'), __('Add Server','hovpnm'), 'manage_options', 'hovpnm-add-server', __NAMESPACE__ . '\\render_add_server');
+    add_submenu_page('hovpnm', __('Edit Server','hovpnm'), __('Edit Server','hovpnm'), 'manage_options', 'hovpnm-edit-server', __NAMESPACE__ . '\\render_edit_server');
 });
 
 // Enqueue admin CSS on our pages
@@ -84,6 +85,12 @@ function render_extensions() {
 function render_add_server() {
     if (!current_user_can('manage_options')) return;
     include __DIR__ . '/templates/add-server.php';
+}
+
+// Render Edit Server page
+function render_edit_server() {
+    if (!current_user_can('manage_options')) return;
+    include __DIR__ . '/templates/edit-server.php';
 }
 
 // Handle manual add form submission
@@ -163,5 +170,48 @@ add_action('admin_post_hovpnm_import_ovpn', function(){
     }
     \HOVPNM\Core\Servers::insert($data);
     wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Server imported from OVPN.','hovpnm')), admin_url('admin.php?page=hovpnm')));
+    exit;
+});
+
+// Handle update server
+add_action('admin_post_hovpnm_update_server', function(){
+    if (!current_user_can('manage_options')) wp_die(__('Forbidden','hovpnm'));
+    $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+    check_admin_referer('hovpnm_update_server_' . $id);
+    if (!$id) {
+        wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Invalid server ID.','hovpnm')), admin_url('admin.php?page=hovpnm')));
+        exit;
+    }
+    $data = [
+        'file_name'   => sanitize_file_name($_POST['file_name'] ?? ''),
+        'remote_host' => sanitize_text_field($_POST['remote_host'] ?? ''),
+        'port'        => isset($_POST['port']) && $_POST['port'] !== '' ? intval($_POST['port']) : null,
+        'protocol'    => in_array(strtolower($_POST['protocol'] ?? ''), ['udp','tcp'], true) ? strtolower($_POST['protocol']) : null,
+        'cipher'      => sanitize_text_field($_POST['cipher'] ?? ''),
+        'type'        => sanitize_text_field($_POST['type'] ?? ''),
+        'label'       => sanitize_text_field($_POST['label'] ?? ''),
+        'location'    => sanitize_text_field($_POST['location'] ?? ''),
+        'notes'       => wp_kses_post($_POST['notes'] ?? ''),
+    ];
+    if (empty($data['file_name']) || empty($data['remote_host'])) {
+        wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Please provide at least Name and Remote Host.','hovpnm')), admin_url('admin.php?page=hovpnm-edit-server&id=' . $id)));
+        exit;
+    }
+    \HOVPNM\Core\Servers::update($id, $data);
+    wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Server updated.','hovpnm')), admin_url('admin.php?page=hovpnm')));
+    exit;
+});
+
+// Handle delete server
+add_action('admin_post_hovpnm_delete_server', function(){
+    if (!current_user_can('manage_options')) wp_die(__('Forbidden','hovpnm'));
+    $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+    check_admin_referer('hovpnm_delete_server_' . $id);
+    if (!$id) {
+        wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Invalid server ID.','hovpnm')), admin_url('admin.php?page=hovpnm')));
+        exit;
+    }
+    \HOVPNM\Core\Servers::delete($id);
+    wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Server deleted.','hovpnm')), admin_url('admin.php?page=hovpnm')));
     exit;
 });
