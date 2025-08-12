@@ -7,8 +7,12 @@
       btn.prop('disabled',false).text(HOVPNM_CH.msgPing);
       if(!res || !res.success){ alert(HOVPNM_CH.msgPingFailed); return; }
       var ping=parseInt(res.data.ping,10);
-      alert(HOVPNM_CH.msgPingLabel+' '+ping+' ms');
-      setTimeout(function(){ location.reload(); }, 200);
+      var row=btn.closest('tr');
+      var cell=row.find('td[data-col="ch_ping"]');
+      if(cell.length){
+        cell.text(ping+' ms').addClass('hovpnm-flash');
+        setTimeout(function(){ cell.removeClass('hovpnm-flash'); }, 3000);
+      }
     });
   });
 
@@ -24,7 +28,9 @@
       m.find('form').hide();
       if(!m.find('.hovpnm-ping-view').length){ m.find('> div').append('<div class="hovpnm-ping-view" style="margin-top:10px;"></div>'); }
       m.find('.hovpnm-ping-view').html('<p><strong>'+HOVPNM_CH.msgCHPing+'</strong> '+ping+' ms</p>');
-      m.show();
+  // Add close button if missing
+  if(!m.find('.hovpnm-modal-close').length){ m.find('> div').prepend('<button type="button" class="button hovpnm-modal-close" style="float:right;">'+HOVPNM_CH.msgClose+'</button>'); }
+  m.show();
     });
   });
 

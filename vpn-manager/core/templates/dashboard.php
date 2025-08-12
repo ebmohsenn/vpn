@@ -80,8 +80,8 @@ $actions = ColumnsRegistry::$actions;
       <?php if ($servers): foreach ($servers as $s): ?>
       <tr>
         <td><?php echo esc_html(pathinfo($s->file_name, PATHINFO_FILENAME)); ?></td>
-        <?php foreach ($columns as $id => $col): ?>
-        <td><?php if (is_callable($col['cb'])) { echo wp_kses_post(call_user_func($col['cb'], $s)); } ?></td>
+  <?php foreach ($columns as $id => $col): ?>
+  <td data-col="<?php echo esc_attr($id); ?>"><?php if (is_callable($col['cb'])) { echo wp_kses_post(call_user_func($col['cb'], $s)); } ?></td>
         <?php endforeach; ?>
         <td>
           <a href="#" class="button button-secondary hovpnm-edit-btn" data-id="<?php echo (int)$s->id; ?>" data-name="<?php echo esc_attr($s->file_name); ?>" data-remote="<?php echo esc_attr($s->remote_host); ?>" data-port="<?php echo esc_attr($s->port); ?>" data-protocol="<?php echo esc_attr($s->protocol); ?>" data-cipher="<?php echo esc_attr($s->cipher); ?>" data-type="<?php echo esc_attr($s->type); ?>" data-location="<?php echo esc_attr($s->location); ?>" data-notes="<?php echo esc_attr((string)($s->notes ?? '')); ?>"><?php esc_html_e('Edit','hovpnm'); ?></a>

@@ -16,3 +16,7 @@
 .wrap .widefat.hovpnm-table td .button {
   margin-right: 6px;
 }
+.wrap .widefat.hovpnm-table td.hovpnm-flash {
+  background: #d1f7d6 !important;
+  transition: background-color 0.5s ease;
+}

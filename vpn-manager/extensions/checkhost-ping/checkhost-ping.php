@@ -39,5 +39,6 @@ add_action('admin_enqueue_scripts', function($hook){
         'msgPingLabel' => __('Ping:','hovpnm'),
         'msgCHPing' => __('Check-Host Ping:','hovpnm'),
         'msgEditTitle' => __('Edit Server','hovpnm'),
+    'msgClose' => __('Close','hovpnm'),
     ]);
 });
