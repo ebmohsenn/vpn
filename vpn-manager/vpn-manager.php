@@ -31,6 +31,11 @@ register_deactivation_hook(__FILE__, function() {
     \HOVPNM\Core\DB::deactivate();
 });
 
+// Load translations at init (WordPress 6.7+ requirement)
+add_action('init', function() {
+    load_plugin_textdomain('hovpnm', false, dirname(plugin_basename(__FILE__)) . '/languages');
+});
+
 // Load extensions based on active list
 add_action('plugins_loaded', function() {
     \HOVPNM\Core\Bootstrap::load_extensions();
