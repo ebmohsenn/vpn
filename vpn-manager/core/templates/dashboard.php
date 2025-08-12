@@ -96,7 +96,8 @@ $actions = ColumnsRegistry::$actions;
     </tbody>
   </table>
 </div>
-<script>
+<script type="text/javascript">
+//<![CDATA[
 (function($){
   function closeModal(){ $('#hovpnm-edit-modal').hide(); }
   function openModal(){ $('#hovpnm-edit-modal').show(); }
@@ -140,4 +141,5 @@ $actions = ColumnsRegistry::$actions;
     }).fail(function(){ alert('<?php echo esc_js(__('Update failed.','hovpnm')); ?>'); });
   });
 })(jQuery);
+//]]>
 </script>

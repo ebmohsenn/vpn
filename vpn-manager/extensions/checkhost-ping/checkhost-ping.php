@@ -45,7 +45,20 @@ add_action('admin_enqueue_scripts', function($hook){
         . '   alert("' . esc_js(__('Ping:','hovpnm')) . ' "+ping+" ms");\n'
         . '   setTimeout(function(){ location.reload(); }, 200);\n'
         . ' });\n'
-        . ' });\n'
+    . ' });\n'
+    . ' $(document).on("click", ".button[data-action=more-ping]", function(e){ e.preventDefault(); var btn=$(this), id=btn.data("id");\n'
+    . '   $.post(ajaxurl, { action: "hovpnm_ch_ping", id: id, _ajax_nonce: "' . esc_js($nonce) . '" }, function(res){\n'
+    . '     if(!res || !res.success){ alert("' . esc_js(__('Failed to load ping','hovpnm')) . '"); return; }\n'
+    . '     var ping=parseInt(res.data.ping,10);\n'
+    . '     var m=$("#hovpnm-edit-modal"); if(!m.length){ alert("' . esc_js(__('Ping:','hovpnm')) . ' "+ping+" ms"); return; }\n'
+    . '     m.find("h2").text("' . esc_js(__('More Ping','hovpnm')) . '");\n'
+    . '     m.find("form").hide();\n'
+    . '     if(!m.find(".hovpnm-ping-view").length){ m.find("> div").append("<div class=\"hovpnm-ping-view\" style=\"margin-top:10px;\"></div>"); }\n'
+    . '     m.find(".hovpnm-ping-view").html("<p><strong>' . esc_js(__('Check-Host Ping:','hovpnm')) . '</strong> "+ping+" ms</p>");\n'
+    . '     m.show();\n'
+    . '   });\n'
+    . ' });\n'
+    . ' $(document).on("click", ".hovpnm-modal-close", function(){ var m=$("#hovpnm-edit-modal"); m.hide(); m.find("form").show(); m.find(".hovpnm-ping-view").remove(); m.find("h2").text("' . esc_js(__('Edit Server','hovpnm')) . '"); });\n'
         . '});';
     wp_add_inline_script('jquery-core', $js);
 });

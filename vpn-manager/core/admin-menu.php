@@ -14,7 +14,6 @@ add_action('admin_menu', function() {
     );
     add_submenu_page('hovpnm', __('Extensions','hovpnm'), __('Extensions','hovpnm'), 'manage_options', 'hovpnm-extensions', __NAMESPACE__ . '\\render_extensions');
     add_submenu_page('hovpnm', __('Add Server','hovpnm'), __('Add Server','hovpnm'), 'manage_options', 'hovpnm-add-server', __NAMESPACE__ . '\\render_add_server');
-    add_submenu_page('hovpnm', __('Edit Server','hovpnm'), __('Edit Server','hovpnm'), 'manage_options', 'hovpnm-edit-server', __NAMESPACE__ . '\\render_edit_server');
 });
 
 // Enqueue admin CSS on our pages
@@ -87,11 +86,6 @@ function render_add_server() {
     include __DIR__ . '/templates/add-server.php';
 }
 
-// Render Edit Server page
-function render_edit_server() {
-    if (!current_user_can('manage_options')) return;
-    include __DIR__ . '/templates/edit-server.php';
-}
 
 // Handle manual add form submission
 add_action('admin_post_hovpnm_add_server', function(){
