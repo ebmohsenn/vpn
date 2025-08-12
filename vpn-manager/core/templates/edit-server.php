@@ -42,11 +42,13 @@ $server = $id ? Servers::get($id) : null;
       </tr>
       <tr>
         <th><label for="type"><?php esc_html_e('Type', 'hovpnm'); ?></label></th>
-        <td><input type="text" id="type" name="type" class="regular-text" value="<?php echo esc_attr($server->type); ?>" /></td>
-      </tr>
-      <tr>
-        <th><label for="label"><?php esc_html_e('Label', 'hovpnm'); ?></label></th>
-        <td><input type="text" id="label" name="label" class="regular-text" value="<?php echo esc_attr($server->label); ?>" /></td>
+        <td>
+          <select id="type" name="type">
+            <option value="standard" <?php selected($server->type, 'standard'); ?>><?php esc_html_e('Standard','hovpnm'); ?></option>
+            <option value="premium" <?php selected($server->type, 'premium'); ?>><?php esc_html_e('Premium','hovpnm'); ?></option>
+            <option value="free" <?php selected($server->type, 'free'); ?>><?php esc_html_e('Free','hovpnm'); ?></option>
+          </select>
+        </td>
       </tr>
       <tr>
         <th><label for="location"><?php esc_html_e('Location', 'hovpnm'); ?></label></th>

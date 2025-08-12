@@ -42,11 +42,13 @@ $actions = ColumnsRegistry::$actions;
           </tr>
           <tr>
             <th><label><?php esc_html_e('Type','hovpnm'); ?></label></th>
-            <td><input type="text" class="regular-text" name="type"></td>
-          </tr>
-          <tr>
-            <th><label><?php esc_html_e('Label','hovpnm'); ?></label></th>
-            <td><input type="text" class="regular-text" name="label"></td>
+            <td>
+              <select name="type">
+                <option value="standard"><?php esc_html_e('Standard','hovpnm'); ?></option>
+                <option value="premium"><?php esc_html_e('Premium','hovpnm'); ?></option>
+                <option value="free"><?php esc_html_e('Free','hovpnm'); ?></option>
+              </select>
+            </td>
           </tr>
           <tr>
             <th><label><?php esc_html_e('Location','hovpnm'); ?></label></th>
@@ -82,7 +84,7 @@ $actions = ColumnsRegistry::$actions;
         <td><?php if (is_callable($col['cb'])) { echo wp_kses_post(call_user_func($col['cb'], $s)); } ?></td>
         <?php endforeach; ?>
         <td>
-          <a href="#" class="button button-secondary hovpnm-edit-btn" data-id="<?php echo (int)$s->id; ?>" data-name="<?php echo esc_attr($s->file_name); ?>" data-remote="<?php echo esc_attr($s->remote_host); ?>" data-port="<?php echo esc_attr($s->port); ?>" data-protocol="<?php echo esc_attr($s->protocol); ?>" data-cipher="<?php echo esc_attr($s->cipher); ?>" data-type="<?php echo esc_attr($s->type); ?>" data-label="<?php echo esc_attr($s->label); ?>" data-location="<?php echo esc_attr($s->location); ?>" data-notes="<?php echo esc_attr((string)($s->notes ?? '')); ?>"><?php esc_html_e('Edit','hovpnm'); ?></a>
+          <a href="#" class="button button-secondary hovpnm-edit-btn" data-id="<?php echo (int)$s->id; ?>" data-name="<?php echo esc_attr($s->file_name); ?>" data-remote="<?php echo esc_attr($s->remote_host); ?>" data-port="<?php echo esc_attr($s->port); ?>" data-protocol="<?php echo esc_attr($s->protocol); ?>" data-cipher="<?php echo esc_attr($s->cipher); ?>" data-type="<?php echo esc_attr($s->type); ?>" data-location="<?php echo esc_attr($s->location); ?>" data-notes="<?php echo esc_attr((string)($s->notes ?? '')); ?>"><?php esc_html_e('Edit','hovpnm'); ?></a>
           <?php foreach ($actions as $act): ?>
             <?php if (is_callable($act['cb'])): ?>
               <a href="#" class="button" data-id="<?php echo (int)$s->id; ?>" data-action="<?php echo esc_attr(sanitize_title($act['label'])); ?>"><?php echo esc_html($act['label']); ?></a>

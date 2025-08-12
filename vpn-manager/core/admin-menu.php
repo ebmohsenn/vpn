@@ -100,14 +100,14 @@ function render_add_server() {
 add_action('admin_post_hovpnm_add_server', function(){
     if (!current_user_can('manage_options')) wp_die(__('Forbidden','hovpnm'));
     check_admin_referer('hovpnm_add_server');
+    $allowed_types = ['standard','premium','free'];
     $data = [
         'file_name'   => sanitize_file_name($_POST['file_name'] ?? ''),
         'remote_host' => sanitize_text_field($_POST['remote_host'] ?? ''),
         'port'        => intval($_POST['port'] ?? 0) ?: null,
         'protocol'    => in_array(strtolower($_POST['protocol'] ?? ''), ['udp','tcp'], true) ? strtolower($_POST['protocol']) : null,
         'cipher'      => sanitize_text_field($_POST['cipher'] ?? ''),
-        'type'        => sanitize_text_field($_POST['type'] ?? ''),
-        'label'       => sanitize_text_field($_POST['label'] ?? ''),
+        'type'        => in_array($_POST['type'] ?? 'standard', $allowed_types, true) ? $_POST['type'] : 'standard',
         'location'    => sanitize_text_field($_POST['location'] ?? ''),
         'notes'       => wp_kses_post($_POST['notes'] ?? ''),
         'status'      => 'unknown',
@@ -159,12 +159,14 @@ add_action('admin_post_hovpnm_import_ovpn', function(){
     if (preg_match('/^\s*cipher\s+([^\s]+)/mi', $content, $m)) {
         $cipher = $m[1];
     }
+    $allowed_types = ['standard','premium','free'];
     $data = [
         'file_name'   => sanitize_file_name(basename($path)),
         'remote_host' => sanitize_text_field($remote),
         'port'        => $port,
         'protocol'    => $proto,
         'cipher'      => sanitize_text_field($cipher),
+        'type'        => 'standard',
         'status'      => 'unknown',
     ];
     if (empty($data['file_name']) || empty($data['remote_host'])) {
@@ -185,14 +187,14 @@ add_action('admin_post_hovpnm_update_server', function(){
         wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Invalid server ID.','hovpnm')), admin_url('admin.php?page=hovpnm')));
         exit;
     }
+    $allowed_types = ['standard','premium','free'];
     $data = [
         'file_name'   => sanitize_file_name($_POST['file_name'] ?? ''),
         'remote_host' => sanitize_text_field($_POST['remote_host'] ?? ''),
         'port'        => isset($_POST['port']) && $_POST['port'] !== '' ? intval($_POST['port']) : null,
         'protocol'    => in_array(strtolower($_POST['protocol'] ?? ''), ['udp','tcp'], true) ? strtolower($_POST['protocol']) : null,
         'cipher'      => sanitize_text_field($_POST['cipher'] ?? ''),
-        'type'        => sanitize_text_field($_POST['type'] ?? ''),
-        'label'       => sanitize_text_field($_POST['label'] ?? ''),
+        'type'        => in_array($_POST['type'] ?? 'standard', $allowed_types, true) ? $_POST['type'] : 'standard',
         'location'    => sanitize_text_field($_POST['location'] ?? ''),
         'notes'       => wp_kses_post($_POST['notes'] ?? ''),
     ];
