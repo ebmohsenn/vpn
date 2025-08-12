@@ -163,13 +163,12 @@ class Vpnpm_Settings {
             'vpnpm_settings_page',
             'vpnpm_settings_section'
         );
-
+    }
 
     public static function field_auto_update_location() {
         $opts = self::get_settings();
         $checked = !empty($opts['auto_update_location']);
         echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION) . '[auto_update_location]" value="1" ' . checked($checked, true, false) . '> ' . esc_html__('Automatically update server location on ping', 'vpnserver') . '</label>';
-    }
     }
 
     public static function sanitize_settings($input) {
