@@ -54,7 +54,7 @@ $server = $id ? Servers::get($id) : null;
       </tr>
       <tr>
         <th><label for="notes"><?php esc_html_e('Notes', 'hovpnm'); ?></label></th>
-        <td><textarea id="notes" name="notes" class="large-text" rows="3"><?php echo esc_textarea($server->notes); ?></textarea></td>
+  <td><textarea id="notes" name="notes" class="large-text" rows="3"><?php echo esc_textarea((string) ($server->notes ?? '')); ?></textarea></td>
       </tr>
     </table>
     <?php submit_button(__('Save Changes','hovpnm')); ?>
