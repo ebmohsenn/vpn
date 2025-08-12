@@ -19,9 +19,9 @@ add_action('admin_menu', function() {
 // Enqueue admin CSS on our pages
 add_action('admin_enqueue_scripts', function($hook){
     if ($hook === 'toplevel_page_hovpnm' || strpos($hook, 'hovpnm-') !== false) {
-        wp_enqueue_style('hovpnm-admin', plugins_url('core/assets/css/admin.css', dirname(__FILE__)), [], HOVPNM_VERSION);
+        wp_enqueue_style('hovpnm-admin', HOVPNM_PLUGIN_URL . 'core/assets/css/admin.css', [], HOVPNM_VERSION);
         if ($hook === 'toplevel_page_hovpnm') {
-            wp_enqueue_script('hovpnm-dashboard', plugins_url('core/assets/js/dashboard.js', dirname(__FILE__)), ['jquery'], HOVPNM_VERSION, true);
+            wp_enqueue_script('hovpnm-dashboard', HOVPNM_PLUGIN_URL . 'core/assets/js/dashboard.js', ['jquery'], HOVPNM_VERSION, true);
             wp_localize_script('hovpnm-dashboard', 'HOVPNM_DASH', [
                 'apiBase' => rest_url('hovpnm/v1/servers/'),
                 'nonce' => wp_create_nonce('wp_rest'),

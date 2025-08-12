@@ -28,7 +28,7 @@ function action_ping($server) { return '#'; }
 // Admin JS wiring for ping buttons via external file
 add_action('admin_enqueue_scripts', function($hook){
     if ($hook !== 'toplevel_page_hovpnm') return;
-    wp_enqueue_script('hovpnm-checkhost', plugins_url('extensions/checkhost-ping/assets/js/checkhost.js', dirname(__FILE__)), ['jquery'], HOVPNM_VERSION, true);
+    wp_enqueue_script('hovpnm-checkhost', HOVPNM_PLUGIN_URL . 'extensions/checkhost-ping/assets/js/checkhost.js', ['jquery'], HOVPNM_VERSION, true);
     wp_localize_script('hovpnm-checkhost', 'HOVPNM_CH', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('hovpnm'),
