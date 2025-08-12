@@ -108,14 +108,11 @@
         dataType: 'json',
         data: { action: 'vpnpm_test_server', _ajax_nonce: vpnpmAjax.nonce, id: id }
       }).done(function(resp) {
-        const $s = $status.removeClass('badge-green badge-red badge-gray badge-blue').addClass('badge');
-        if (resp && resp.success && (resp.data.status || '').toLowerCase() === 'active') {
-          $s.addClass('badge-green').text('Active');
-        } else if (resp && resp.success && (resp.data.status || '').toLowerCase() === 'down') {
-          $s.addClass('badge-red').text('Down');
-        } else {
-          $s.addClass('badge-gray').text('Unknown');
-        }
+        const status = resp && resp.success ? (resp.data.status || 'unknown').toLowerCase() : 'unknown';
+        // Update with correct classes used by cards
+        $status.removeClass('status-active status-offline status-unknown');
+        const cls = status === 'active' ? 'status-active' : (status === 'down' ? 'status-offline' : 'status-unknown');
+        $status.addClass(cls).text(status.charAt(0).toUpperCase() + status.slice(1));
         const last = resp && resp.success ? (resp.data.last_checked || '') : '';
         let $last = $card.find('.vpnpm-last-checked');
         if (!$last.length) $last = $('<small class="vpnpm-last-checked" />').appendTo($status.parent());
@@ -140,7 +137,39 @@
           }
         }
       }).fail(function() {
-        $status.removeClass('badge-green').addClass('badge badge-red').text('Down');
+        // On failure, fetch latest status for this card so UI reflects DB without page reload
+        $.ajax({
+          url: vpnpmAjax.ajaxurl,
+          type: 'POST', dataType: 'json',
+          data: { action: 'vpnpm_get_all_status', _ajax_nonce: vpnpmAjax.nonce }
+        }).done(function(resp){
+          if (resp && resp.success && resp.data && Array.isArray(resp.data.servers)) {
+            const rec = resp.data.servers.find(function(s){ return s.id === id; });
+            if (rec) {
+              const s = (rec.status || 'unknown').toLowerCase();
+              $status.removeClass('status-active status-offline status-unknown')
+                     .addClass(s === 'active' ? 'status-active' : (s === 'down' ? 'status-offline' : 'status-unknown'))
+                     .text(s.charAt(0).toUpperCase() + s.slice(1));
+              const $ping = $card.find('.vpnpm-ping-server');
+              if (rec.ping !== null && rec.ping !== undefined) {
+                $ping.text(rec.ping + ' ms');
+              }
+              const $ch = $card.find('.vpnpm-ping-ch');
+              if ($ch.length && rec.ch_ping !== undefined && rec.ch_ping !== null) {
+                $ch.text(rec.ch_ping + ' ms');
+              }
+              const $last = $card.find('.vpnpm-last-checked');
+              if ($last.length && rec.last_checked) {
+                $last.text(rec.last_checked);
+              }
+              return;
+            }
+          }
+          // Fallback visual if nothing found
+          $status.removeClass('status-active status-unknown').addClass('status-offline').text('Down');
+        }).fail(function(){
+          $status.removeClass('status-active status-unknown').addClass('status-offline').text('Down');
+        });
       }).always(function(){
         // Also try to refresh Check-Host ping if integration is active
         $.ajax({
