@@ -9,8 +9,9 @@ $actions = ColumnsRegistry::$actions;
 <div class="wrap">
   <h1><?php echo esc_html__('HO VPN Manager', 'hovpnm'); ?></h1>
   <div id="hovpnm-edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:100000;">
-    <div style="background:#fff; width:640px; max-width:95%; margin:5% auto; padding:16px; border-radius:6px;">
-      <h2 style="margin-top:0;"><?php esc_html_e('Edit Server','hovpnm'); ?></h2>
+    <div style="background:#fff; width:640px; max-width:95%; margin:5% auto; padding:16px; border-radius:6px; position:relative;">
+      <button type="button" class="button hovpnm-modal-close" style="position:absolute; right:12px; top:12px;">&times;</button>
+      <h2 style="margin-top:0; padding-right:48px;"><?php esc_html_e('Edit Server','hovpnm'); ?></h2>
       <form id="hovpnm-edit-form">
         <input type="hidden" name="id" />
         <table class="form-table"><tbody>
@@ -64,7 +65,6 @@ $actions = ColumnsRegistry::$actions;
           <button type="button" class="button hovpnm-modal-close"><?php esc_html_e('Cancel','hovpnm'); ?></button>
         </p>
       </form>
-    </div>
   </div>
   <table class="widefat fixed striped hovpnm-table">
     <thead>
