@@ -154,6 +154,10 @@ $type_class = $type === 'premium' ? 'type-premium' : 'type-standard';
 						<button class="vpn-btn vpnpm-edit-btn" data-id="<?php echo (int)$server->id; ?>">Edit</button>
 						<button class="vpn-btn vpn-btn-danger vpnpm-delete-btn" data-id="<?php echo (int)$server->id; ?>">Delete</button>
 						<button class="vpn-btn" data-role="vpnpm-more-ping" data-id="<?php echo (int)$server->id; ?>">More Ping</button>
+						<button class="vpn-btn" data-role="vpnpm-toggle-history" data-id="<?php echo (int)$server->id; ?>">Ping History</button>
+					</div>
+					<div class="vpnpm-history" id="vpnpm-history-<?php echo (int)$server->id; ?>" style="display:none; margin-top:8px;">
+						<div class="vpnpm-history-body"></div>
 					</div>
 				</div>
 				<?php endforeach; ?>

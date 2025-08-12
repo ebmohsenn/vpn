@@ -27,7 +27,7 @@ class Vpnpm_Settings {
             'telegram_chat_ids' => '', // comma-separated list
             'enable_cron'       => 1,
             'enable_telegram'   => 1,
-            'cron_interval'     => '10', // minutes: '5','10','15'
+            'cron_interval'     => '10', // minutes/hours: '5','10','15','60','360','720','1440'
             'telegram_time_mode'=> 'jalali', // 'jalali' or 'system'
             'ping_source'       => 'server', // 'server' or 'checkhost'
             'checkhost_nodes'   => '', // deprecated, use Settings > VPN Server Manager Settings for node selection
@@ -179,7 +179,7 @@ class Vpnpm_Settings {
         $out['enable_cron'] = !empty($in['enable_cron']) ? 1 : 0;
         $out['enable_telegram'] = !empty($in['enable_telegram']) ? 1 : 0;
 
-        $allowed = ['5','10','15'];
+    $allowed = ['5','10','15','60','360','720','1440'];
         $interval = isset($in['cron_interval']) ? (string) $in['cron_interval'] : '10';
         $out['cron_interval'] = in_array($interval, $allowed, true) ? $interval : '10';
 
@@ -251,7 +251,15 @@ class Vpnpm_Settings {
         $opts = self::get_settings();
         $val = isset($opts['cron_interval']) ? (string)$opts['cron_interval'] : '10';
         echo '<select name="' . esc_attr(self::OPTION) . '[cron_interval]">';
-        $choices = [ '5' => __('Every 5 minutes','vpnserver'), '10' => __('Every 10 minutes','vpnserver'), '15' => __('Every 15 minutes','vpnserver') ];
+        $choices = [
+            '5'    => __('Every 5 minutes','vpnserver'),
+            '10'   => __('Every 10 minutes','vpnserver'),
+            '15'   => __('Every 15 minutes','vpnserver'),
+            '60'   => __('Every 1 hour','vpnserver'),
+            '360'  => __('Every 6 hours','vpnserver'),
+            '720'  => __('Every 12 hours','vpnserver'),
+            '1440' => __('Every 24 hours','vpnserver'),
+        ];
         foreach ($choices as $k => $label) {
             printf('<option value="%s" %s>%s</option>', esc_attr($k), selected($val, $k, false), esc_html($label));
         }
@@ -316,9 +324,13 @@ class Vpnpm_Settings {
     }
 
     public static function register_cron_schedules($schedules) {
-        $schedules['vpnpm_5m']  = ['interval' => 5 * 60,  'display' => __('Every 5 Minutes', 'vpnserver')];
-        $schedules['vpnpm_10m'] = ['interval' => 10 * 60, 'display' => __('Every 10 Minutes', 'vpnserver')];
-        $schedules['vpnpm_15m'] = ['interval' => 15 * 60, 'display' => __('Every 15 Minutes', 'vpnserver')];
+    $schedules['vpnpm_5m']    = ['interval' => 5 * 60,    'display' => __('Every 5 Minutes', 'vpnserver')];
+    $schedules['vpnpm_10m']   = ['interval' => 10 * 60,   'display' => __('Every 10 Minutes', 'vpnserver')];
+    $schedules['vpnpm_15m']   = ['interval' => 15 * 60,   'display' => __('Every 15 Minutes', 'vpnserver')];
+    $schedules['vpnpm_60m']   = ['interval' => 60 * 60,   'display' => __('Every 1 Hour', 'vpnserver')];
+    $schedules['vpnpm_360m']  = ['interval' => 360 * 60,  'display' => __('Every 6 Hours', 'vpnserver')];
+    $schedules['vpnpm_720m']  = ['interval' => 720 * 60,  'display' => __('Every 12 Hours', 'vpnserver')];
+    $schedules['vpnpm_1440m'] = ['interval' => 1440 * 60, 'display' => __('Every 24 Hours', 'vpnserver')];
         return $schedules;
     }
 
@@ -326,7 +338,15 @@ class Vpnpm_Settings {
         $opts = self::get_settings();
         $enabled = !empty($opts['enable_cron']);
         $interval = isset($opts['cron_interval']) ? (string) $opts['cron_interval'] : '10';
-        $recurrences = [ '5' => 'vpnpm_5m', '10' => 'vpnpm_10m', '15' => 'vpnpm_15m' ];
+        $recurrences = [
+            '5'    => 'vpnpm_5m',
+            '10'   => 'vpnpm_10m',
+            '15'   => 'vpnpm_15m',
+            '60'   => 'vpnpm_60m',
+            '360'  => 'vpnpm_360m',
+            '720'  => 'vpnpm_720m',
+            '1440' => 'vpnpm_1440m',
+        ];
         $recurrence = isset($recurrences[$interval]) ? $recurrences[$interval] : 'vpnpm_10m';
 
         $ts = wp_next_scheduled('vpnpm_test_all_servers_cron');

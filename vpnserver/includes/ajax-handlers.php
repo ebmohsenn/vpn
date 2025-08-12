@@ -157,6 +157,9 @@ function vpnpm_ajax_test_server() {
 		['%s', '%d', '%s'],
 		['%d']
 	);
+	if (function_exists('vpnpm_insert_ping_history')) {
+		vpnpm_insert_ping_history($id, $ping_ms, 'server');
+	}
 	wp_send_json_success([
 		'id'           => $id,
 		'status'       => $status,
@@ -220,6 +223,9 @@ function vpnpm_ajax_test_server_checkhost() {
 	}
 	if ($avg !== null || $raw !== null) {
 		vpnpm_store_checkhost_result($id, $avg, $raw);
+		if (!is_null($avg) && function_exists('vpnpm_insert_ping_history')) {
+			vpnpm_insert_ping_history($id, (int)$avg, 'checkhost');
+		}
 	} elseif (function_exists('vpnpm_store_checkhost_error')) {
 		vpnpm_store_checkhost_error($id, isset($perr) && $perr ? $perr : ($err ?: 'No data from Check-Host'));
 	}
@@ -487,5 +493,36 @@ function vpnpm_ajax_get_all_status() {
 endif;
 
 // Cron scheduling and ping processing is handled in vpnserver.php with settings-aware logic.
+
+// AJAX: Get ping history for a server (last 6 days, 12h slots)
+if (!function_exists('vpnpm_ajax_get_ping_history')):
+add_action('wp_ajax_vpnpm_get_ping_history', 'vpnpm_ajax_get_ping_history');
+function vpnpm_ajax_get_ping_history() {
+	if (!current_user_can('manage_options')) {
+		wp_send_json_error(['message' => __('Unauthorized', 'vpnserver')], 403);
+	}
+	check_ajax_referer('vpnpm-nonce');
+	$id = isset($_REQUEST['id']) ? (int)$_REQUEST['id'] : 0;
+	if (!$id) wp_send_json_error(['message' => __('Invalid ID', 'vpnserver')], 400);
+	if (!function_exists('vpnpm_get_ping_history')) {
+		wp_send_json_error(['message' => __('History not available', 'vpnserver')]);
+	}
+	$rows = vpnpm_get_ping_history($id, 6);
+	// Normalize payload grouped by source
+	$bySource = [];
+	foreach ($rows as $r) {
+		$src = $r->source;
+		if (!isset($bySource[$src])) $bySource[$src] = [];
+		$bySource[$src][] = [
+			'slot'    => $r->slot,
+			'avg'     => is_null($r->avg_ping) ? null : (int)$r->avg_ping,
+			'min'     => is_null($r->min_ping) ? null : (int)$r->min_ping,
+			'max'     => is_null($r->max_ping) ? null : (int)$r->max_ping,
+			'samples' => (int)$r->samples,
+		];
+	}
+	wp_send_json_success(['history' => $bySource]);
+}
+endif;
 
 // End of ajax-handlers

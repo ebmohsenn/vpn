@@ -1,11 +1,12 @@
 <?php
 defined('ABSPATH') || exit;
 
-// Register settings page under Settings menu
+// Register settings page under the plugin menu (VPN Manager) per requirement
 add_action('admin_menu', function() {
-    add_options_page(
+    add_submenu_page(
+        'vpmgr',
         __('VPN Server Manager Settings', 'vpnserver'),
-        __('VPN Server Manager', 'vpnserver'),
+        __('Nodes & Pinging', 'vpnserver'),
         'manage_options',
         'vpnsm-settings',
         'vpnsm_settings_page'

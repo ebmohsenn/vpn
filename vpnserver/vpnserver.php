@@ -350,6 +350,14 @@ function vpnpm_test_all_servers() {
             $server->status = $status;
             $server->ping = $local_ping !== false ? $local_ping : null;
             $server->checkhost_ping_avg = $avg;
+
+            // Store ping history snapshots
+            if (function_exists('vpnpm_insert_ping_history')) {
+                vpnpm_insert_ping_history($server->id, ($local_ping !== false ? (int)$local_ping : null), 'server');
+                if (!is_null($avg)) {
+                    vpnpm_insert_ping_history($server->id, (int)$avg, 'checkhost');
+                }
+            }
         } else {
             $ping = vpnpm_get_server_ping($server->remote_host, $server->port);
             $status = $ping !== false ? 'active' : 'down';
@@ -368,6 +376,11 @@ function vpnpm_test_all_servers() {
             $server->status = $status;
             $server->ping = $ping !== false ? $ping : null;
             $server->checkhost_ping_avg = null;
+
+            // Store ping history snapshot (server source)
+            if (function_exists('vpnpm_insert_ping_history')) {
+                vpnpm_insert_ping_history($server->id, ($ping !== false ? (int)$ping : null), 'server');
+            }
         }
     }
 

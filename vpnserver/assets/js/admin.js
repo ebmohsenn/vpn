@@ -247,6 +247,59 @@
       openMorePing($(this).data('id'));
     });
 
+    // Toggle ping history (loads via AJAX on first open)
+    $(document).on('click', '[data-role="vpnpm-toggle-history"]', function(){
+      const id = $(this).data('id');
+      const $wrap = $('#vpnpm-history-' + id);
+      const $body = $wrap.find('.vpnpm-history-body');
+      if ($wrap.is(':visible')) { $wrap.slideUp(120); return; }
+      if (!$body.data('loaded')) {
+        $body.html('<em>Loading…</em>');
+        $.ajax({
+          url: vpnpmAjax.ajaxurl,
+          type: 'POST', dataType: 'json',
+          data: { action: 'vpnpm_get_ping_history', _ajax_nonce: vpnpmAjax.nonce, id: id }
+        }).done(function(resp){
+          if (resp && resp.success && resp.data && resp.data.history) {
+            const hist = resp.data.history;
+            const renderTable = function(rows, title) {
+              let html = '<h4 style="margin:6px 0;">' + title + '</h4>';
+              html += '<table class="widefat fixed striped" style="margin-bottom:8px;">';
+              html += '<thead><tr><th>Slot (12h)</th><th>Avg (ms)</th><th>Min</th><th>Max</th><th>Samples</th></tr></thead><tbody>';
+              rows.forEach(function(r){
+                const d = new Date(r.slot.replace(' ', 'T'));
+                const slot = isNaN(d.getTime()) ? r.slot : d.toLocaleString();
+                html += '<tr>' +
+                  '<td>' + slot + '</td>' +
+                  '<td>' + (r.avg != null ? r.avg : 'N/A') + '</td>' +
+                  '<td>' + (r.min != null ? r.min : 'N/A') + '</td>' +
+                  '<td>' + (r.max != null ? r.max : 'N/A') + '</td>' +
+                  '<td>' + (r.samples || 0) + '</td>' +
+                '</tr>';
+              });
+              html += '</tbody></table>';
+              return html;
+            };
+            let out = '';
+            if (Array.isArray(hist.server) && hist.server.length) {
+              out += renderTable(hist.server, 'Server ping');
+            }
+            if (Array.isArray(hist.checkhost) && hist.checkhost.length) {
+              out += renderTable(hist.checkhost, 'Check-Host ping');
+            }
+            if (!out) out = '<em>No history data yet.</em>';
+            $body.html(out);
+            $body.data('loaded', true);
+          } else {
+            $body.html('<em>Failed to load history.</em>');
+          }
+        }).fail(function(){
+          $body.html('<em>Failed to load history.</em>');
+        });
+      }
+      $wrap.slideDown(120);
+    });
+
     function closeMorePingModal() {
       const $modal = $('#vpnpm-moreping-modal');
       // Move focus outside before hiding to avoid aria-hidden on focused element

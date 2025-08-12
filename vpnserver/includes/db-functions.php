@@ -39,6 +39,20 @@ function vpnpm_create_tables() {
 	) $charset_collate;";
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 	dbDelta($sql);
+
+	// History table: store ping snapshots every ~12h for up to 6 days
+	$hist = $wpdb->prefix . 'vpn_ping_history';
+	$sql2 = "CREATE TABLE {$hist} (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		profile_id bigint(20) unsigned NOT NULL,
+		source varchar(20) NOT NULL DEFAULT 'server',
+		ping int(11) DEFAULT NULL,
+		created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (id),
+		KEY profile_id (profile_id),
+		KEY created_at (created_at)
+	) $charset_collate;";
+	dbDelta($sql2);
 }
 endif;
 
@@ -79,6 +93,45 @@ function vpnpm_ensure_schema() {
 	if (!$has_ch_err) {
 		$wpdb->query("ALTER TABLE {$table} ADD COLUMN checkhost_last_error text NULL AFTER checkhost_last_checked");
 	}
+}
+endif;
+
+// Insert ping history
+if (!function_exists('vpnpm_insert_ping_history')):
+function vpnpm_insert_ping_history($profile_id, $ping, $source = 'server') {
+	global $wpdb; $hist = $wpdb->prefix . 'vpn_ping_history';
+	$wpdb->insert($hist, [
+		'profile_id' => (int)$profile_id,
+		'source'     => substr((string)$source, 0, 20),
+		'ping'       => is_null($ping) ? null : (int)$ping,
+		'created_at' => current_time('mysql'),
+	], ['%d','%s','%d','%s']);
+	return (int)$wpdb->insert_id;
+}
+endif;
+
+// Fetch last N days history aggregated per 12h slots
+if (!function_exists('vpnpm_get_ping_history')):
+function vpnpm_get_ping_history($profile_id, $days = 6) {
+	global $wpdb; $hist = $wpdb->prefix . 'vpn_ping_history';
+	$since = gmdate('Y-m-d H:i:s', current_time('timestamp', true) - ($days * DAY_IN_SECONDS));
+	// Group by 12-hour windows in site timezone by rounding to nearest half-day
+	$rows = $wpdb->get_results($wpdb->prepare(
+		"SELECT 
+			profile_id,
+			source,
+			FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(created_at)/(12*3600))*(12*3600)) AS slot,
+			AVG(ping) AS avg_ping,
+			MIN(ping) AS min_ping,
+			MAX(ping) AS max_ping,
+			COUNT(*) AS samples
+		 FROM {$hist}
+		 WHERE profile_id = %d AND created_at >= %s
+		 GROUP BY profile_id, source, slot
+		 ORDER BY slot DESC",
+		(int)$profile_id, $since
+	));
+	return $rows ?: [];
 }
 endif;
 
