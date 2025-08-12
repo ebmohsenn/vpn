@@ -134,20 +134,20 @@ function vpnpm_handle_upload() {
 	check_admin_referer('vpnpm-upload');
 
 	if (empty($_FILES['ovpn_file']) || $_FILES['ovpn_file']['error'] !== UPLOAD_ERR_OK) {
-		wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpn-manager')));
+		wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpmgr')));
 		exit;
 	}
 
 	$file = $_FILES['ovpn_file'];
 	$name = sanitize_file_name($file['name']);
 	if (strtolower(pathinfo($name, PATHINFO_EXTENSION)) !== 'ovpn') {
-		wp_redirect(add_query_arg('vpnpm_msg', 'invalid_type', admin_url('admin.php?page=vpn-manager')));
+		wp_redirect(add_query_arg('vpnpm_msg', 'invalid_type', admin_url('admin.php?page=vpmgr')));
 		exit;
 	}
 
 	$parse = vpnpm_parse_ovpn_file($file['tmp_name']);
 	if (is_wp_error($parse)) {
-		wp_redirect(add_query_arg('vpnpm_msg', 'parse_error', admin_url('admin.php?page=vpn-manager')));
+		wp_redirect(add_query_arg('vpnpm_msg', 'parse_error', admin_url('admin.php?page=vpmgr')));
 		exit;
 	}
 
@@ -169,17 +169,17 @@ function vpnpm_handle_upload() {
 
 	$id = vpnpm_insert_profile($data);
 	if (!$id) {
-		wp_redirect(add_query_arg('vpnpm_msg', 'db_error', admin_url('admin.php?page=vpn-manager')));
+		wp_redirect(add_query_arg('vpnpm_msg', 'db_error', admin_url('admin.php?page=vpmgr')));
 		exit;
 	}
 
 	if (!vpnpm_store_config_file($id, $file['tmp_name'])) {
 		vpnpm_delete_profile($id);
-		wp_redirect(add_query_arg('vpnpm_msg', 'store_error', admin_url('admin.php?page=vpn-manager')));
+		wp_redirect(add_query_arg('vpnpm_msg', 'store_error', admin_url('admin.php?page=vpmgr')));
 		exit;
 	}
 
-	wp_redirect(add_query_arg('vpnpm_msg', 'added', admin_url('admin.php?page=vpn-manager')));
+	wp_redirect(add_query_arg('vpnpm_msg', 'added', admin_url('admin.php?page=vpmgr')));
 	exit;
 }
 
@@ -192,7 +192,7 @@ function vpnpm_handle_bulk_upload() {
     check_admin_referer('vpnpm-upload');
 
     if (empty($_FILES['ovpn_files']['name'])) {
-        wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpn-manager')));
+	wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpmgr')));
         exit;
     }
 
@@ -211,7 +211,7 @@ function vpnpm_handle_bulk_upload() {
 
         $parse = vpnpm_parse_ovpn_file($tmp_name);
         if (is_wp_error($parse)) {
-            $errors[] = sprintf(__('Failed to parse file: %s', 'vpnserver'), $file_name);
+			$errors[] = sprintf(__('Failed to parse file: %s', 'vpnserver'), $file_name);
             continue;
         }
 
@@ -243,9 +243,9 @@ function vpnpm_handle_bulk_upload() {
     }
 
     if ($success_count > 0) {
-        wp_redirect(add_query_arg('vpnpm_msg', 'added', admin_url('admin.php?page=vpn-manager')));
+	wp_redirect(add_query_arg('vpnpm_msg', 'added', admin_url('admin.php?page=vpmgr')));
     } else {
-        wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpn-manager')));
+	wp_redirect(add_query_arg('vpnpm_msg', 'upload_error', admin_url('admin.php?page=vpmgr')));
     }
     exit;
 }
