@@ -1,3 +1,4 @@
+<?php
 // Update server location using ip-api.com (country - city)
 if (!function_exists('vpnpm_update_server_location')):
 function vpnpm_update_server_location($profile_id, $ip) {
@@ -17,7 +18,6 @@ function vpnpm_update_server_location($profile_id, $ip) {
 	return $location;
 }
 endif;
-<?php
 defined('ABSPATH') || exit;
 
 if (!function_exists('vpnpm_table_name')):
