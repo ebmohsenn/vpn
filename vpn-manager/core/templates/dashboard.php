@@ -4,6 +4,8 @@ use HOVPNM\Core\ColumnsRegistry;
 if (!defined('ABSPATH')) { exit; }
 $servers = Servers::all();
 $columns = ColumnsRegistry::$cols;
+$visible = get_option('hovpnm_visible_columns', array_keys($columns));
+if (!is_array($visible)) { $visible = array_keys($columns); }
 $actions = ColumnsRegistry::$actions;
 ?>
 <div class="wrap">
@@ -70,8 +72,8 @@ $actions = ColumnsRegistry::$actions;
     <thead>
       <tr>
         <th><?php esc_html_e('Name','hovpnm'); ?></th>
-        <?php foreach ($columns as $id => $col): ?>
-        <th><?php echo esc_html($col['label']); ?></th>
+  <?php foreach ($columns as $id => $col): if (!in_array($id, $visible, true)) continue; ?>
+  <th><?php echo esc_html($col['label']); ?></th>
         <?php endforeach; ?>
         <th><?php esc_html_e('Actions','hovpnm'); ?></th>
       </tr>
@@ -80,14 +82,16 @@ $actions = ColumnsRegistry::$actions;
       <?php if ($servers): foreach ($servers as $s): ?>
       <tr>
         <td><?php echo esc_html(pathinfo($s->file_name, PATHINFO_FILENAME)); ?></td>
-  <?php foreach ($columns as $id => $col): ?>
+  <?php foreach ($columns as $id => $col): if (!in_array($id, $visible, true)) continue; ?>
   <td data-col="<?php echo esc_attr($id); ?>"><?php if (is_callable($col['cb'])) { echo wp_kses_post(call_user_func($col['cb'], $s)); } ?></td>
         <?php endforeach; ?>
         <td>
           <a href="#" class="button button-secondary hovpnm-edit-btn" data-id="<?php echo (int)$s->id; ?>" data-name="<?php echo esc_attr($s->file_name); ?>" data-remote="<?php echo esc_attr($s->remote_host); ?>" data-port="<?php echo esc_attr($s->port); ?>" data-protocol="<?php echo esc_attr($s->protocol); ?>" data-cipher="<?php echo esc_attr($s->cipher); ?>" data-type="<?php echo esc_attr($s->type); ?>" data-location="<?php echo esc_attr($s->location); ?>" data-notes="<?php echo esc_attr((string)($s->notes ?? '')); ?>"><?php esc_html_e('Edit','hovpnm'); ?></a>
           <?php foreach ($actions as $act): ?>
             <?php if (is_callable($act['cb'])): ?>
-              <a href="#" class="button" data-id="<?php echo (int)$s->id; ?>" data-action="<?php echo esc_attr(sanitize_title($act['label'])); ?>"><?php echo esc_html($act['label']); ?></a>
+              <a href="#" class="button" data-id="<?php echo (int)$s->id; ?>" data-action="<?php echo esc_attr($act['id'] ?? sanitize_title($act['label'])); ?>" title="<?php echo esc_attr($act['title'] ?? $act['label']); ?>">
+                <?php echo !empty($act['icon']) ? wp_kses_post($act['icon']) : esc_html($act['label']); ?>
+              </a>
             <?php endif; ?>
           <?php endforeach; ?>
         </td>

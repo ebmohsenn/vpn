@@ -14,6 +14,7 @@ add_action('admin_menu', function() {
     );
     add_submenu_page('hovpnm', __('Extensions','hovpnm'), __('Extensions','hovpnm'), 'manage_options', 'hovpnm-extensions', __NAMESPACE__ . '\\render_extensions');
     add_submenu_page('hovpnm', __('Add Server','hovpnm'), __('Add Server','hovpnm'), 'manage_options', 'hovpnm-add-server', __NAMESPACE__ . '\\render_add_server');
+    add_submenu_page('hovpnm', __('Settings','hovpnm'), __('Settings','hovpnm'), 'manage_options', 'hovpnm-settings', __NAMESPACE__ . '\\render_settings');
 });
 
 // Enqueue admin CSS on our pages
@@ -89,6 +90,34 @@ function render_extensions() {
     echo '</form></div>';
 }
 
+function render_settings() {
+    if (!current_user_can('manage_options')) return;
+    $all_cols = \HOVPNM\Core\ColumnsRegistry::$cols;
+    $visible = get_option('hovpnm_visible_columns', array_keys($all_cols));
+    if (!is_array($visible)) $visible = [];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('hovpnm_settings_columns')) {
+        $new_visible = isset($_POST['visible_cols']) && is_array($_POST['visible_cols']) ? array_values(array_map('sanitize_text_field', $_POST['visible_cols'])) : [];
+        update_option('hovpnm_visible_columns', $new_visible);
+        $visible = $new_visible;
+        echo '<div class="updated"><p>' . esc_html__('Settings saved.','hovpnm') . '</p></div>';
+    }
+    echo '<div class="wrap"><h1>' . esc_html__('Settings','hovpnm') . '</h1>';
+    echo '<h2 class="title">' . esc_html__('Column Visibility','hovpnm') . '</h2>';
+    echo '<form method="post">';
+    wp_nonce_field('hovpnm_settings_columns');
+    echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Column','hovpnm') . '</th><th>' . esc_html__('Visible','hovpnm') . '</th></tr></thead><tbody>';
+    foreach ($all_cols as $id => $meta) {
+        $checked = in_array($id, $visible, true) ? 'checked' : '';
+        echo '<tr>'
+            . '<td><strong>' . esc_html($meta['label']) . '</strong> <code>' . esc_html($id) . '</code></td>'
+            . '<td><label><input type="checkbox" name="visible_cols[]" value="' . esc_attr($id) . '" ' . $checked . '> ' . esc_html__('Show','hovpnm') . '</label></td>'
+            . '</tr>';
+    }
+    echo '</tbody></table>';
+    echo '<p><button type="submit" class="button button-primary">' . esc_html__('Save Changes','hovpnm') . '</button></p>';
+    echo '</form></div>';
+}
+
 // Render Add Server page
 function render_add_server() {
     if (!current_user_can('manage_options')) return;
@@ -111,14 +140,18 @@ add_action('admin_post_hovpnm_add_server', function(){
         'location'    => sanitize_text_field($_POST['location'] ?? ''),
         'notes'       => wp_kses_post($_POST['notes'] ?? ''),
         'status'      => 'unknown',
-        'ping'        => null,
-        'last_checked'=> null,
     ];
     if (empty($data['file_name']) || empty($data['remote_host'])) {
         wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Please provide at least Name and Remote Host.','hovpnm')), admin_url('admin.php?page=hovpnm-add-server')));
         exit;
     }
-    \HOVPNM\Core\Servers::insert($data);
+    $new_id = \HOVPNM\Core\Servers::insert($data);
+    // Auto-detect location if not provided
+    if (empty($data['location'])) {
+        $loc = detect_location_for_host($data['remote_host']);
+        if ($loc !== '') { \HOVPNM\Core\Servers::update($new_id, ['location' => $loc]); }
+    }
+    do_action('vpnpm_server_added', $new_id, $data);
     wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Server added.','hovpnm')), admin_url('admin.php?page=hovpnm')));
     exit;
 });
@@ -159,21 +192,26 @@ add_action('admin_post_hovpnm_import_ovpn', function(){
     if (preg_match('/^\s*cipher\s+([^\s]+)/mi', $content, $m)) {
         $cipher = $m[1];
     }
-    $allowed_types = ['standard','premium','free'];
     $data = [
         'file_name'   => sanitize_file_name(basename($path)),
         'remote_host' => sanitize_text_field($remote),
         'port'        => $port,
         'protocol'    => $proto,
         'cipher'      => sanitize_text_field($cipher),
-        'type'        => 'standard',
-        'status'      => 'unknown',
+    'type'        => 'standard',
+    'status'      => 'unknown',
     ];
     if (empty($data['file_name']) || empty($data['remote_host'])) {
         wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Could not parse required fields from file.','hovpnm')), admin_url('admin.php?page=hovpnm-add-server')));
         exit;
     }
-    \HOVPNM\Core\Servers::insert($data);
+    $new_id = \HOVPNM\Core\Servers::insert($data);
+    // Auto-detect location if empty
+    if (empty($data['location']) && !empty($data['remote_host'])) {
+        $loc = detect_location_for_host($data['remote_host']);
+        if ($loc !== '') { \HOVPNM\Core\Servers::update($new_id, ['location' => $loc]); }
+    }
+    do_action('vpnpm_server_added', $new_id, $data);
     wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Server imported from OVPN.','hovpnm')), admin_url('admin.php?page=hovpnm')));
     exit;
 });
@@ -203,6 +241,7 @@ add_action('admin_post_hovpnm_update_server', function(){
         exit;
     }
     \HOVPNM\Core\Servers::update($id, $data);
+    do_action('vpnpm_server_updated', $id, $data);
     wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Server updated.','hovpnm')), admin_url('admin.php?page=hovpnm')));
     exit;
 });

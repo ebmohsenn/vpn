@@ -20,8 +20,22 @@ function remove_server_column($id) {
 }
 
 function add_server_action($label, $callback) {
+    // Backward compatible simple action (no icon)
     ColumnsRegistry::$actions[] = [
+        'id' => sanitize_title($label),
         'label' => $label,
+        'icon' => '',
+        'title' => $label,
+        'cb' => $callback,
+    ];
+}
+
+function add_server_action_ex($id, $icon_html, $title, $callback) {
+    ColumnsRegistry::$actions[] = [
+        'id' => sanitize_title($id),
+        'label' => $title,
+        'icon' => $icon_html,
+        'title' => $title,
         'cb' => $callback,
     ];
 }

@@ -10,7 +10,10 @@ add_action('init', function(){
         return '<span style="' . esc_attr($class) . '">' . esc_html(ucfirst($st)) . '</span>';
     });
     register_server_column('ping', __('Ping (Server)','hovpnm'), function($s){
-        return isset($s->ping) ? intval($s->ping) . ' ms' : 'N/A';
+        if (!empty($s->ping_server_avg)) {
+            return intval($s->ping_server_avg) . ' ms';
+        }
+        return 'N/A';
     });
     register_server_column('type', __('Type','hovpnm'), function($s){
         $t = isset($s->type)? $s->type : 'standard';
@@ -23,4 +26,5 @@ add_action('init', function(){
 
 // Public API re-exports
 function vpnpm_register_server_column($id, $label, $callback) { register_server_column($id, $label, $callback); }
-function vpnpm_add_server_action($label, $callback) { add_server_action($label, $callback); }
+// New signature: id, icon_html, title, callback. Kept for extension authors.
+function vpnpm_add_server_action($id, $icon_html, $title, $callback) { add_server_action_ex($id, $icon_html, $title, $callback); }

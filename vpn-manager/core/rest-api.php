@@ -24,7 +24,7 @@ function rest_update_server($req) {
     if (!$id) return new \WP_Error('invalid_id', __('Invalid ID','hovpnm'), ['status' => 400]);
     $payload = $req->get_json_params();
     if (!is_array($payload)) $payload = [];
-    $allowed = ['file_name','remote_host','port','protocol','cipher','type','label','location','notes'];
+    $allowed = ['file_name','remote_host','port','protocol','cipher','type','location','notes'];
     $data = [];
     foreach ($allowed as $k) {
         if (!array_key_exists($k, $payload)) continue;

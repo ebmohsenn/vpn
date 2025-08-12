@@ -28,17 +28,49 @@ class DB {
             protocol varchar(20) DEFAULT NULL,
             cipher varchar(100) DEFAULT NULL,
             status varchar(20) DEFAULT 'unknown',
-            ping int(11) DEFAULT NULL,
             type varchar(20) DEFAULT 'standard',
-            label varchar(20) DEFAULT 'standard',
             location varchar(191) DEFAULT NULL,
             notes text NULL,
-            last_checked datetime DEFAULT NULL,
+            -- Aggregated pings and last-checked timestamps
+            ping_server_avg int(11) DEFAULT NULL,
+            ping_server_last_checked datetime DEFAULT NULL,
+            checkhost_ping_avg int(11) DEFAULT NULL,
+            checkhost_ping_json longtext NULL,
+            checkhost_last_checked datetime DEFAULT NULL,
+            checkhost_last_error text NULL,
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY remote_host (remote_host),
             KEY status (status)
         ) {$charset_collate};";
         dbDelta($sql);
+
+        // Ping history table
+        $hist_table = $wpdb->prefix . 'vpn_ping_history';
+        $sql_hist = "CREATE TABLE {$hist_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            server_id bigint(20) unsigned NOT NULL,
+            source varchar(32) NOT NULL,
+            ping_value int(11) DEFAULT NULL,
+            location varchar(191) DEFAULT NULL,
+            status varchar(20) DEFAULT 'unknown',
+            timestamp datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY server_id (server_id),
+            KEY source (source)
+        ) {$charset_collate};";
+        dbDelta($sql_hist);
+
+        // Server tags table
+        $tags_table = $wpdb->prefix . 'vpn_server_tags';
+        $sql_tags = "CREATE TABLE {$tags_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            server_id bigint(20) unsigned NOT NULL,
+            tag varchar(100) NOT NULL,
+            PRIMARY KEY (id),
+            KEY server_id (server_id),
+            KEY tag (tag)
+        ) {$charset_collate};";
+        dbDelta($sql_tags);
     }
 }
