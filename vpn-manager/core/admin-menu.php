@@ -292,23 +292,15 @@ add_action('admin_post_hovpnm_import_ovpn_multi', function(){
         wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('No files selected.','hovpnm')), admin_url('admin.php?page=hovpnm-add-server')));
         exit;
     }
-    require_once ABSPATH . 'wp-admin/includes/file.php';
-    $overrides = ['test_form' => false];
     $names = $_FILES['ovpn_files']['name'];
     $tmp_names = $_FILES['ovpn_files']['tmp_name'];
     $errs = $_FILES['ovpn_files']['error'];
     $count = 0; $fail = 0;
     foreach ($names as $idx => $name) {
-        if (!empty($errs[$idx]) || empty($tmp_names[$idx])) { $fail++; continue; }
-        $file_array = [
-            'name' => $name,
-            'tmp_name' => $tmp_names[$idx],
-        ];
-        // Use wp_handle_upload directly with provided array
-        $file = wp_handle_upload($file_array, $overrides);
-        if (isset($file['error'])) { $fail++; continue; }
-        $path = $file['file'];
-        $content = @file_get_contents($path);
+        $err = isset($errs[$idx]) ? (int)$errs[$idx] : UPLOAD_ERR_NO_FILE;
+        $tmp = $tmp_names[$idx] ?? '';
+        if ($err !== UPLOAD_ERR_OK || !$tmp || !is_uploaded_file($tmp)) { $fail++; continue; }
+        $content = @file_get_contents($tmp);
         if ($content === false) { $fail++; continue; }
         $remote = ''; $port = null; $proto = null; $cipher = '';
         if (preg_match('/^\s*remote\s+([^\s]+)(?:\s+(\d+))?/mi', $content, $m)) {
@@ -317,7 +309,7 @@ add_action('admin_post_hovpnm_import_ovpn_multi', function(){
         if (preg_match('/^\s*proto\s+(udp|tcp)/mi', $content, $m)) { $proto = strtolower($m[1]); }
         if (preg_match('/^\s*cipher\s+([^\s]+)/mi', $content, $m)) { $cipher = $m[1]; }
         $data = [
-            'file_name' => sanitize_file_name(basename($path)),
+            'file_name' => sanitize_file_name(basename($name)),
             'remote_host' => sanitize_text_field($remote),
             'port' => $port,
             'protocol' => $proto,
@@ -370,9 +362,27 @@ add_action('admin_post_hovpnm_import_csv', function(){
     }
     $count = 0; $fail = 0;
     $headers = null;
+    // Normalize line endings and handle UTF-8 BOM
+    stream_filter_append($fh, 'convert.iconv.UTF-8/UTF-8');
     while (($row = fgetcsv($fh)) !== false) {
-        if ($headers === null) { $headers = array_map('trim', $row); continue; }
-        $data = array_combine($headers, array_map('trim', $row));
+        // Skip empty lines
+        if (count($row) === 1 && trim((string)$row[0]) === '') { continue; }
+        if ($headers === null) {
+            $headers = array_map(function($h){
+                $h = trim((string)$h);
+                // remove BOM
+                $h = preg_replace('/^\xEF\xBB\xBF/', '', $h);
+                return $h;
+            }, $row);
+            continue;
+        }
+        // Pad or trim row to header length
+        if (count($row) < count($headers)) {
+            $row = array_pad($row, count($headers), '');
+        } elseif (count($row) > count($headers)) {
+            $row = array_slice($row, 0, count($headers));
+        }
+        $data = @array_combine($headers, array_map('trim', $row));
         if ($data === false) { $fail++; continue; }
         $allowed_types = ['standard','premium','free'];
         $payload = [
