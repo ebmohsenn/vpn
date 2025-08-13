@@ -19,6 +19,9 @@ class Bootstrap {
         if (!is_dir($ext_dir)) return;
         $active = get_option('vpnpm_active_extensions', []);
         if (!is_array($active)) $active = [];
+        // Auto-sanitize active list: remove deprecated ping providers
+        $active = array_values(array_filter($active, function($slug){ return !in_array($slug, ['checkhost-ping','ping-merge'], true); }));
+        update_option('vpnpm_active_extensions', $active);
         foreach (scandir($ext_dir) as $folder) {
             if ($folder === '.' || $folder === '..') continue;
             $path = $ext_dir . '/' . $folder;

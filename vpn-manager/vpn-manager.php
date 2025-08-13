@@ -69,6 +69,12 @@ add_action('init', function(){
     }
 }, 20);
 
+// Remove legacy options for deprecated ping providers
+add_action('init', function(){
+    delete_option('hovpnm_checkhost');
+    delete_option('hovpnm_sched_sources');
+});
+
 // Custom intervals for scheduler
 add_filter('cron_schedules', function($schedules){
     $schedules['five_minutes'] = ['interval' => 5*60, 'display' => __('Every 5 minutes','hovpnm')];

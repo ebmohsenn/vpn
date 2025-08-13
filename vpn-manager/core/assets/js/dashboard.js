@@ -58,14 +58,8 @@
     var allBtns=[];
     $('.hovpnm-table tbody tr').each(function(){
       var row=$(this);
-  // Prefer merged Ping if present
-  var merged = row.find('.button[data-action="ping"]');
-  if(merged.length) { allBtns.push(merged.get(0)); return; }
-  // Otherwise push both individual pings if present
   var srv = row.find('.button[data-action="server-ping"]');
-  var ch = row.find('.button[data-action="checkhost-ping"]');
   if(srv.length) allBtns.push(srv.get(0));
-  if(ch.length) allBtns.push(ch.get(0));
     });
     if(!allBtns.length){
       alert(HOVPNM_DASH.msgNoPingBtns);
