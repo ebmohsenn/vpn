@@ -7,7 +7,7 @@ use function HOVPNM\Core\add_server_action_ex;
 
 add_action('init', function(){
     register_server_column('srv_ping', __('Ping (Server)','hovpnm'), __NAMESPACE__ . '\\col_srv_ping');
-    add_server_action_ex('server-ping', '<span class="dashicons dashicons-rss"></span>', __('Ping (Server)','hovpnm'), __NAMESPACE__ . '\\action_srv_ping');
+    add_server_action_ex('server-ping', '', __('Ping','hovpnm'), __NAMESPACE__ . '\\action_srv_ping');
 });
 
 function col_srv_ping($s) {

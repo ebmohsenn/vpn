@@ -28,27 +28,7 @@ function ch_compute_and_update($id, $force = false) {
     return [true, $value];
 }
 
-add_action('wp_ajax_hovpnm_ch_ping', function(){
-    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Unauthorized'], 403);
-    check_ajax_referer('hovpnm');
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    $force = !empty($_POST['force']) ? true : false;
-    if (!$id) wp_send_json_error(['message'=>'Invalid id'], 400);
-    list($ok, $value) = ch_compute_and_update($id, $force);
-    if (!$ok) { wp_send_json_error(['message' => 'Check-Host error']); }
-    wp_send_json_success(['id'=>$id,'ping'=>$value]);
-});
-
-// Scheduler/internal trigger: reuse same logic; no response needed
-add_action('hovpnm_internal_checkhost_ping', function($id){ ch_compute_and_update($id, true); });
+// Disabled per request: no Check-Host AJAX or scheduler hooks
 
 // History endpoint (used by More Ping modal)
-add_action('wp_ajax_hovpnm_ch_history', function(){
-    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Unauthorized'], 403);
-    check_ajax_referer('hovpnm');
-    $id = isset($_GET['id']) ? (int)$_GET['id'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
-    if (!$id) wp_send_json_error(['message'=>'Invalid id'], 400);
-    global $wpdb; $hist = $wpdb->prefix . 'vpn_ping_history';
-    $rows = $wpdb->get_results($wpdb->prepare("SELECT timestamp, ping_value, status, location, source FROM {$hist} WHERE server_id=%d ORDER BY timestamp DESC LIMIT 200", $id));
-    wp_send_json_success(['items' => $rows]);
-});
+// Disabled per request: no history endpoint

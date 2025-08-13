@@ -27,14 +27,11 @@ class Bootstrap {
             if (!file_exists($main)) continue;
             // Only load if active
             if (in_array($folder, $active, true)) {
+                // Disable checkhost and ping-merge entirely
+                if (in_array($folder, ['checkhost-ping','ping-merge'], true)) {
+                    continue;
+                }
                 include_once $main;
-            }
-        }
-        // Auto-load ping-merge when any ping extension is active
-        if (in_array('server-ping', $active, true) || in_array('checkhost-ping', $active, true)) {
-            $merge = $ext_dir . '/ping-merge/ping-merge.php';
-            if (file_exists($merge)) {
-                include_once $merge;
             }
         }
     }
