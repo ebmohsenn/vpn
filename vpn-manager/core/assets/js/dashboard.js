@@ -58,8 +58,8 @@
     var allBtns=[];
     $('.hovpnm-table tbody tr').each(function(){
       var row=$(this);
-  var srv = row.find('.button[data-action="server-ping"]');
-  if(srv.length) allBtns.push(srv.get(0));
+  var corePing = row.find('.button[data-action="ping"]');
+  if(corePing.length) allBtns.push(corePing.get(0));
     });
     if(!allBtns.length){
       alert(HOVPNM_DASH.msgNoPingBtns);

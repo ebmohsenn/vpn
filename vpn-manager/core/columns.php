@@ -9,17 +9,13 @@ add_action('init', function(){
         $class = $st === 'active' ? 'color:green;' : ($st === 'down' ? 'color:#a00;' : 'color:#555;');
         return '<span style="' . esc_attr($class) . '">' . esc_html(ucfirst($st)) . '</span>';
     });
-    // Avoid duplicating with the Server Ping extension's 'srv_ping' when active
-    $active = get_option('vpnpm_active_extensions', []);
-    if (!is_array($active)) $active = [];
-    if (!in_array('server-ping', $active, true)) {
-        register_server_column('ping', __('Ping (Server)','hovpnm'), function($s){
-            if (!empty($s->ping_server_avg)) {
-                return intval($s->ping_server_avg) . ' ms';
-            }
-            return 'N/A';
-        });
-    }
+    // Always include server ping column in core
+    register_server_column('ping', __('Ping (Server)','hovpnm'), function($s){
+        if (!empty($s->ping_server_avg)) {
+            return intval($s->ping_server_avg) . ' ms';
+        }
+        return 'N/A';
+    });
     register_server_column('type', __('Type','hovpnm'), function($s){
         $t = isset($s->type)? $s->type : 'standard';
         return esc_html(ucfirst($t));
