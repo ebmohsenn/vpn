@@ -18,17 +18,42 @@ function ch_compute_and_update($id, $force = false) {
     if (!is_numeric($value)) return [false, null];
     $value = (int)$value;
     if ($value <= 0 || $value > 1000) return [false, null];
-    // Update aggregates only (do not touch status)
-    global $wpdb; $t = \HOVPNM\Core\DB::table_name();
-    $now = current_time('mysql');
-    $wpdb->update($t, [
-        'checkhost_ping_avg' => $value,
-        'checkhost_last_checked' => $now,
-    ], ['id' => $id]);
+    // Store in ping history only; do not touch status or schema
+    global $wpdb; $hist = $wpdb->prefix . 'vpn_ping_history';
+    $host = $wpdb->get_var($wpdb->prepare('SELECT remote_host FROM ' . \HOVPNM\Core\DB::table_name() . ' WHERE id=%d', $id));
+    $wpdb->insert($hist, [
+        'server_id' => $id,
+        'source' => 'checkhost',
+        'ping_value' => $value,
+        'location' => \HOVPNM\Core\detect_location_for_host($host),
+        'status' => 'unknown',
+        'timestamp' => current_time('mysql'),
+    ]);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log(sprintf('[HOVPNM] ch_ping id=%d ping=%d ms', $id, $value));
+    }
     return [true, $value];
 }
 
-// Disabled per request: no Check-Host AJAX or scheduler hooks
+add_action('wp_ajax_hovpnm_ch_ping', function(){
+    if (!current_user_can('manage_options')) wp_send_json_error(['message'=>'Unauthorized'], 403);
+    check_ajax_referer('hovpnm');
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $force = !empty($_POST['force']);
+    if (!$id) wp_send_json_error(['message'=>'Invalid id'], 400);
+    list($ok, $val) = ch_compute_and_update($id, $force);
+    if (!$ok) { wp_send_json_error(['ping'=>null]); }
+    wp_send_json_success(['ping' => (int)$val]);
+});
 
 // History endpoint (used by More Ping modal)
-// Disabled per request: no history endpoint
+add_action('wp_ajax_hovpnm_ch_history', function(){
+    if (!current_user_can('manage_options')) wp_send_json_error(['message'=>'Unauthorized'], 403);
+    check_ajax_referer('hovpnm');
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if (!$id) wp_send_json_error(['message'=>'Invalid id'], 400);
+    global $wpdb; $hist = $wpdb->prefix . 'vpn_ping_history';
+    $rows = $wpdb->get_results($wpdb->prepare("SELECT timestamp, ping_value, status, location FROM {$hist} WHERE server_id=%d AND source=%s ORDER BY timestamp DESC LIMIT 100", $id, 'checkhost'), ARRAY_A);
+    wp_send_json_success(['items' => array_map(function($r){
+        $r['ping_value'] = isset($r['ping_value']) ? (int)$r['ping_value'] : null; return $r; }, $rows)]);
+});

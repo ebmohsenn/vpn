@@ -10,7 +10,7 @@
       var row=btn.closest('tr');
       var cell=row.find('td[data-col="srv_ping"]');
       if(cell.length){
-        var isNum = $.isNumeric(pingVal);
+        var isNum = (pingVal!==null && $.isNumeric(pingVal));
         cell.text(isNum ? (parseInt(pingVal,10)+' ms') : 'N/A').addClass('hovpnm-flash');
         setTimeout(function(){ cell.removeClass('hovpnm-flash'); }, 3000);
       }

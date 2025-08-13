@@ -27,10 +27,6 @@ class Bootstrap {
             if (!file_exists($main)) continue;
             // Only load if active
             if (in_array($folder, $active, true)) {
-                // Disable checkhost and ping-merge entirely
-                if (in_array($folder, ['checkhost-ping','ping-merge'], true)) {
-                    continue;
-                }
                 include_once $main;
             }
         }

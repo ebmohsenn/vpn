@@ -45,8 +45,6 @@ function srv_compute_and_update($id) {
     global $wpdb; $t = \HOVPNM\Core\DB::table_name();
     $server = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t} WHERE id=%d", $id));
     if (!$server) return null;
-    $start = microtime(true);
-    $ok = false;
     $host = $server->remote_host;
     $port = $server->port ?: 1194;
     $proto = isset($server->protocol) ? strtolower($server->protocol) : '';
@@ -54,6 +52,10 @@ function srv_compute_and_update($id) {
     // Configurable timeout (seconds), default 3s, clamp 1-30
     $timeout = intval(get_option('hovpnm_server_ping_timeout', 3));
     if ($timeout < 1 || $timeout > 30) { $timeout = 3; }
+
+    $method = 'socket';
+    $ok = false; $ms = null;
+    $start = microtime(true);
     if ($proto === 'udp') {
         $fp = @stream_socket_client('udp://' . $host . ':' . $port, $errno, $errstr, (float)$timeout);
         if ($fp) { $ok = true; fclose($fp); }
@@ -61,7 +63,23 @@ function srv_compute_and_update($id) {
         $fp = @fsockopen($host, $port, $errno, $errstr, (float)$timeout);
         if ($fp) { $ok = true; fclose($fp); }
     }
-    $ms = (int) round((microtime(true) - $start) * 1000);
+    $elapsed = (int) round((microtime(true) - $start) * 1000);
+    if ($ok) { $ms = $elapsed; }
+
+    // Fallback to exec('ping') if sockets failed
+    if (!$ok && function_exists('exec')) {
+        $method = 'exec-ping';
+        $ms = self::exec_ping_ms($host, $timeout);
+        $ok = is_int($ms) && $ms >= 0; // ms is int on success
+        if (!$ok) { $ms = null; }
+    }
+
+    // Debug logging
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $msg = sprintf('[HOVPNM] srv_ping id=%d host=%s method=%s ms=%s errno=%d err="%s"', (int)$id, (string)$host, $method, ($ms===null?'null':(string)$ms), (int)$errno, (string)$errstr);
+        error_log($msg);
+    }
+
     $avg = $ok ? $ms : null; $now = current_time('mysql');
     $update = [
         'ping_server_avg' => $avg,
@@ -78,10 +96,38 @@ function srv_compute_and_update($id) {
         'status' => ($proto !== 'udp') ? ($ok ? 'active' : 'down') : 'unknown',
         'timestamp' => current_time('mysql'),
     ]);
-    $resp = ['id'=>$id,'ping'=>($ok ? $ms : 'N/A')];
+    $resp = ['id'=>$id,'ping'=>($ok ? $ms : null)];
     if ($proto !== 'udp') { $resp['status'] = $ok ? 'active' : 'down'; }
     if (!$ok && $errstr) { $resp['error'] = $errstr; }
     return $resp;
+}
+
+// Helper: attempt OS ping and parse ms (returns int ms or null)
+function exec_ping_ms($host, $timeoutSec = 3) {
+    $host = escapeshellarg($host);
+    $ms = null; $out = [];
+    $isDarwin = stripos(PHP_OS, 'Darwin') === 0;
+    if ($isDarwin) {
+        // macOS: no simple per-packet timeout; rely on default, single packet
+        @exec("ping -c 1 " . $host . " 2>&1", $out);
+    } else {
+        // Linux: -c 1 (one packet), -W timeout in seconds for reply
+        $to = max(1, (int)$timeoutSec);
+        @exec("ping -c 1 -W " . (int)$to . " " . $host . " 2>&1", $out);
+    }
+    if (is_array($out)) {
+        foreach ($out as $line) {
+            if (preg_match('/time[=\s]([0-9]+\.?[0-9]*)\s*ms/i', $line, $m)) {
+                $val = (float)$m[1];
+                $ms = (int) round($val);
+                break;
+            }
+        }
+    }
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[HOVPNM] exec_ping output: ' . implode(' | ', $out));
+    }
+    return $ms;
 }
 
 // Internal scheduler hook

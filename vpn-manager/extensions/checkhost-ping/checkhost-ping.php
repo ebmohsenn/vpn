@@ -9,7 +9,11 @@ use function HOVPNM\Core\register_server_column;
 use function HOVPNM\Core\add_server_action;
 use function HOVPNM\Core\add_server_action_ex;
 
-// Disabled per request: Check-Host features removed
+// Lightweight Check-Host: shows a secondary ping value stored in transient and history; does not modify status
+add_action('init', function(){
+    register_server_column('ch_ping', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\col_ch_ping');
+    add_server_action_ex('checkhost-ping', '', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\action_ping');
+});
 
 function col_ch_ping($s) {
     $val = get_transient('hovpnm_ch_ping_' . (int)$s->id);
@@ -23,4 +27,16 @@ function action_more_ping($server) {
 function action_ping($server) { return '#'; }
 
 // Admin JS wiring for ping buttons via external file
-// Disabled per request: Check-Host scripts not enqueued
+add_action('admin_enqueue_scripts', function($hook){
+    if ($hook !== 'toplevel_page_hovpnm') return;
+    wp_enqueue_script('hovpnm-checkhost', HOVPNM_PLUGIN_URL . 'extensions/checkhost-ping/assets/js/checkhost.js', ['jquery'], HOVPNM_VERSION, true);
+    wp_localize_script('hovpnm-checkhost', 'HOVPNM_CH', [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('hovpnm'),
+        'msgPinging' => __('Pinging...','hovpnm'),
+        'msgPing' => __('Ping (Check-Host)','hovpnm'),
+        'historyAction' => 'hovpnm_ch_history',
+        'msgMorePing' => __('More Ping','hovpnm'),
+        'msgEditTitle' => __('Edit Server','hovpnm'),
+    ]);
+});
