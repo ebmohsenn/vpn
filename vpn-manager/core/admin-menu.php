@@ -108,6 +108,10 @@ function render_settings() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('hovpnm_settings_columns')) {
         $new_visible = isset($_POST['visible_cols']) && is_array($_POST['visible_cols']) ? array_values(array_map('sanitize_text_field', $_POST['visible_cols'])) : [];
         update_option('hovpnm_visible_columns', $new_visible);
+        // Server ping timeout (1-30 seconds)
+        $timeout = isset($_POST['hovpnm_server_ping_timeout']) ? intval($_POST['hovpnm_server_ping_timeout']) : 3;
+        if ($timeout < 1 || $timeout > 30) { $timeout = 3; }
+        update_option('hovpnm_server_ping_timeout', $timeout);
         $visible = $new_visible;
         echo '<div class="updated"><p>' . esc_html__('Settings saved.','hovpnm') . '</p></div>';
     }
@@ -125,6 +129,14 @@ function render_settings() {
     }
     echo '</tbody></table>';
     echo '<p><button type="submit" class="button button-primary">' . esc_html__('Save Changes','hovpnm') . '</button></p>';
+    echo '<h2 class="title">' . esc_html__('Server Ping','hovpnm') . '</h2>';
+    echo '<table class="form-table"><tbody>';
+    $cur_to = intval(get_option('hovpnm_server_ping_timeout', 3)); if($cur_to<1||$cur_to>30){$cur_to=3;}
+    echo '<tr><th>' . esc_html__('Timeout (seconds)','hovpnm') . '</th><td>'
+        . '<input type="number" min="1" max="30" step="1" name="hovpnm_server_ping_timeout" value="' . esc_attr($cur_to) . '"> '
+        . '<p class="description">' . esc_html__('Time to wait for server ping before marking failure. Default 3s.','hovpnm') . '</p>'
+        . '</td></tr>';
+    echo '</tbody></table>';
     echo '</form></div>';
 }
 
@@ -141,13 +153,10 @@ function render_scheduler() {
     ];
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('hovpnm_settings_scheduler')) {
         $interval = sanitize_text_field($_POST['hovpnm_sched_interval'] ?? 'hourly');
-        $sources = isset($_POST['hovpnm_sched_sources']) && is_array($_POST['hovpnm_sched_sources']) ? array_values(array_map('sanitize_text_field', $_POST['hovpnm_sched_sources'])) : [];
         update_option('hovpnm_sched_interval', $interval);
-        update_option('hovpnm_sched_sources', $sources);
         echo '<div class="updated"><p>' . esc_html__('Scheduler settings saved.','hovpnm') . '</p></div>';
     }
     $cur_int = get_option('hovpnm_sched_interval', 'hourly');
-    $cur_src = get_option('hovpnm_sched_sources', ['server','checkhost']);
     echo '<div class="wrap"><h1>' . esc_html__('Auto-Ping Scheduler','hovpnm') . '</h1>';
     echo '<form method="post">'; wp_nonce_field('hovpnm_settings_scheduler');
     echo '<table class="form-table"><tbody>';
@@ -157,10 +166,7 @@ function render_scheduler() {
         echo '<option value="' . esc_attr($k) . '" ' . $sel . '>' . esc_html($label) . '</option>';
     }
     echo '</select></td></tr>';
-    echo '<tr><th>' . esc_html__('Sources','hovpnm') . '</th><td>'
-        . '<label><input type="checkbox" name="hovpnm_sched_sources[]" value="server" ' . (in_array('server',$cur_src,true)?'checked':'') . '> ' . esc_html__('Server','hovpnm') . '</label> '
-        . '<label><input type="checkbox" name="hovpnm_sched_sources[]" value="checkhost" ' . (in_array('checkhost',$cur_src,true)?'checked':'') . '> ' . esc_html__('Check-Host','hovpnm') . '</label>'
-        . '</td></tr>';
+    // Sources removed; server-only
     echo '</tbody></table>';
     echo '<p><button type="submit" class="button button-primary">' . esc_html__('Save Scheduler','hovpnm') . '</button></p>';
     echo '</form></div>';

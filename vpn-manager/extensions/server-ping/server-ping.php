@@ -51,15 +51,18 @@ function srv_compute_and_update($id) {
     $port = $server->port ?: 1194;
     $proto = isset($server->protocol) ? strtolower($server->protocol) : '';
     $errno = 0; $errstr = '';
+    // Configurable timeout (seconds), default 3s, clamp 1-30
+    $timeout = intval(get_option('hovpnm_server_ping_timeout', 3));
+    if ($timeout < 1 || $timeout > 30) { $timeout = 3; }
     if ($proto === 'udp') {
-        $fp = @stream_socket_client('udp://' . $host . ':' . $port, $errno, $errstr, 2.0);
+        $fp = @stream_socket_client('udp://' . $host . ':' . $port, $errno, $errstr, (float)$timeout);
         if ($fp) { $ok = true; fclose($fp); }
     } else {
-        $fp = @fsockopen($host, $port, $errno, $errstr, 2.0);
+        $fp = @fsockopen($host, $port, $errno, $errstr, (float)$timeout);
         if ($fp) { $ok = true; fclose($fp); }
     }
     $ms = (int) round((microtime(true) - $start) * 1000);
-    $avg = $ms; $now = current_time('mysql');
+    $avg = $ok ? $ms : null; $now = current_time('mysql');
     $update = [
         'ping_server_avg' => $avg,
         'ping_server_last_checked' => $now,
@@ -70,13 +73,14 @@ function srv_compute_and_update($id) {
     $wpdb->insert($hist, [
         'server_id' => $id,
         'source' => 'server',
-        'ping_value' => $ms,
+        'ping_value' => $ok ? $ms : null,
         'location' => \HOVPNM\Core\detect_location_for_host($host),
         'status' => ($proto !== 'udp') ? ($ok ? 'active' : 'down') : 'unknown',
         'timestamp' => current_time('mysql'),
     ]);
-    $resp = ['id'=>$id,'ping'=>$ms];
+    $resp = ['id'=>$id,'ping'=>($ok ? $ms : 'N/A')];
     if ($proto !== 'udp') { $resp['status'] = $ok ? 'active' : 'down'; }
+    if (!$ok && $errstr) { $resp['error'] = $errstr; }
     return $resp;
 }
 

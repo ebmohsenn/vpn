@@ -33,10 +33,6 @@ class DB {
             notes text NULL,
             ping_server_avg int(11) DEFAULT NULL,
             ping_server_last_checked datetime DEFAULT NULL,
-            checkhost_ping_avg int(11) DEFAULT NULL,
-            checkhost_ping_json longtext NULL,
-            checkhost_last_checked datetime DEFAULT NULL,
-            checkhost_last_error text NULL,
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY remote_host (remote_host),
@@ -87,10 +83,6 @@ class DB {
             notes text NULL,
             ping_server_avg int(11) DEFAULT NULL,
             ping_server_last_checked datetime DEFAULT NULL,
-            checkhost_ping_avg int(11) DEFAULT NULL,
-            checkhost_ping_json longtext NULL,
-            checkhost_last_checked datetime DEFAULT NULL,
-            checkhost_last_error text NULL,
             created_at datetime DEFAULT NULL,
             deleted_at datetime NOT NULL,
             PRIMARY KEY (id),
@@ -98,5 +90,18 @@ class DB {
             KEY status (status)
         ) {$charset_collate};";
         dbDelta($sql_del);
+
+        // Drop legacy Check-Host columns if they exist
+        $drop_cols = ['checkhost_ping_avg','checkhost_ping_json','checkhost_last_checked','checkhost_last_error'];
+        foreach ($drop_cols as $col) {
+            $exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$table} LIKE %s", $col));
+            if ($exists) {
+                $wpdb->query("ALTER TABLE {$table} DROP COLUMN {$col}");
+            }
+            $exists_del = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$del_table} LIKE %s", $col));
+            if ($exists_del) {
+                $wpdb->query("ALTER TABLE {$del_table} DROP COLUMN {$col}");
+            }
+        }
     }
 }

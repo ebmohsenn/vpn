@@ -6,11 +6,12 @@
   $.post(HOVPNM_SP.ajaxUrl||HOVPNM_DASH.ajaxUrl, { action:'hovpnm_srv_ping', id:id, _ajax_nonce:HOVPNM_SP.nonce||HOVPNM_DASH.ajaxNonce }, function(res){
       btn.prop('disabled',false).text(HOVPNM_SP.msgPing);
       if(!res || !res.success){ alert(HOVPNM_SP.msgPingFailed); return; }
-      var ping=parseInt(res.data.ping,10);
+      var pingVal = res.data.ping;
       var row=btn.closest('tr');
       var cell=row.find('td[data-col="srv_ping"]');
       if(cell.length){
-        cell.text(ping+' ms').addClass('hovpnm-flash');
+        var isNum = $.isNumeric(pingVal);
+        cell.text(isNum ? (parseInt(pingVal,10)+' ms') : 'N/A').addClass('hovpnm-flash');
         setTimeout(function(){ cell.removeClass('hovpnm-flash'); }, 3000);
       }
       // Update status cell

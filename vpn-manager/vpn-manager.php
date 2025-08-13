@@ -61,6 +61,14 @@ add_action('init', function(){
     }
 });
 
+// One-time schema cleanup: drop legacy Check-Host columns even if version didn't change
+add_action('init', function(){
+    if (!get_option('hovpnm_migr_drop_checkhost_done')) {
+        \HOVPNM\Core\DB::migrate();
+        update_option('hovpnm_migr_drop_checkhost_done', 1);
+    }
+}, 20);
+
 // Custom intervals for scheduler
 add_filter('cron_schedules', function($schedules){
     $schedules['five_minutes'] = ['interval' => 5*60, 'display' => __('Every 5 minutes','hovpnm')];
@@ -82,20 +90,17 @@ register_activation_hook(__FILE__, function(){
     if (!wp_next_scheduled('hovpnm_run_scheduler')) {
         wp_schedule_event(time() + 60, $int, 'hovpnm_run_scheduler');
     }
+    // Clean up legacy scheduler sources option
+    delete_option('hovpnm_sched_sources');
 });
 
 add_action('hovpnm_run_scheduler', function(){
-    $sources = get_option('hovpnm_sched_sources', ['server','checkhost']);
+    // Server-only ping source (Check-Host removed)
     global $wpdb; $t = \HOVPNM\Core\DB::table_name();
     $servers = $wpdb->get_results("SELECT id FROM {$t}");
     foreach ($servers as $s) {
         $id = (int)$s->id;
-        if (in_array('server',$sources,true)) {
-            // Trigger server ping via AJAX-like internal call
-            do_action('hovpnm_internal_server_ping', $id);
-        }
-        if (in_array('checkhost',$sources,true)) {
-            do_action('hovpnm_internal_checkhost_ping', $id);
-        }
+        // Trigger server ping via internal hook
+        do_action('hovpnm_internal_server_ping', $id);
     }
 });
