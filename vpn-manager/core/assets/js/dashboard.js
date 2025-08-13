@@ -30,6 +30,36 @@
       })
       .fail(function(){ alert(HOVPNM_DASH.msgFail); });
   });
+
+  // Ping All: clicks available ping buttons per row with small delay
+  $(document).on('click', '.hovpnm-ping-all', function(e){
+    e.preventDefault();
+    var btn=$(this);
+    var allBtns=[];
+    $('.hovpnm-table tbody tr').each(function(){
+      var row=$(this);
+      var merged = row.find('.button[data-action="ping"]');
+      if(merged.length){ allBtns.push(merged.get(0)); return; }
+      var srv = row.find('.button[data-action="server-ping"]');
+      var ch = row.find('.button[data-action="checkhost-ping"]');
+      if(srv.length) allBtns.push(srv.get(0));
+      if(ch.length) allBtns.push(ch.get(0));
+    });
+    if(!allBtns.length){
+      alert(HOVPNM_DASH.msgNoPingBtns);
+      return;
+    }
+    btn.prop('disabled', true).text(HOVPNM_DASH.msgPingingAll);
+    var i=0;
+    function next(){
+      if(i>=allBtns.length){ btn.prop('disabled', false).text(HOVPNM_DASH.msgPingAll); return; }
+      var b=$(allBtns[i++]);
+      // Trigger click only if not disabled
+      if(!b.prop('disabled')) { b.trigger('click'); }
+      setTimeout(next, 350); // small stagger
+    }
+    next();
+  });
 })(jQuery);
 
 (function($){

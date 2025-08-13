@@ -23,13 +23,16 @@ add_action('admin_menu', function() {
 add_action('admin_enqueue_scripts', function($hook){
     if ($hook === 'toplevel_page_hovpnm' || strpos($hook, 'hovpnm-') !== false) {
         wp_enqueue_style('hovpnm-admin', HOVPNM_PLUGIN_URL . 'core/assets/css/admin.css', [], HOVPNM_VERSION);
-        if ($hook === 'toplevel_page_hovpnm') {
+    if ($hook === 'toplevel_page_hovpnm') {
             wp_enqueue_script('hovpnm-dashboard', HOVPNM_PLUGIN_URL . 'core/assets/js/dashboard.js', ['jquery'], HOVPNM_VERSION, true);
             wp_localize_script('hovpnm-dashboard', 'HOVPNM_DASH', [
                 'apiBase' => rest_url('hovpnm/v1/servers/'),
                 'nonce' => wp_create_nonce('wp_rest'),
                 'msgNoChange' => __('No changes or update failed.','hovpnm'),
-                'msgFail' => __('Update failed.','hovpnm'),
+        'msgFail' => __('Update failed.','hovpnm'),
+        'msgPingAll' => __('Ping All','hovpnm'),
+        'msgPingingAll' => __('Pinging All...','hovpnm'),
+        'msgNoPingBtns' => __('No ping actions available on this page.','hovpnm'),
             ]);
         }
     }
@@ -42,7 +45,10 @@ function render_dashboard() {
         $msg = sanitize_text_field(wp_unslash($_GET['hovpnm_notice']));
         echo '<div class="updated"><p>' . esc_html($msg) . '</p></div>';
     }
-    echo '<p><a href="' . esc_url(admin_url('admin.php?page=hovpnm-add-server')) . '" class="button button-primary">' . esc_html__('Add Server','hovpnm') . '</a></p>';
+    echo '<p>'
+        . '<a href="' . esc_url(admin_url('admin.php?page=hovpnm-add-server')) . '" class="button button-primary">' . esc_html__('Add Server','hovpnm') . '</a> '
+        . '<button type="button" class="button hovpnm-ping-all">' . esc_html__('Ping All','hovpnm') . '</button>'
+        . '</p>';
     include __DIR__ . '/templates/dashboard.php';
     do_action('vpnpm_after_dashboard_render');
 }

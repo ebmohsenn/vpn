@@ -1,5 +1,6 @@
 (function($){
-  $(document).on('click', '.button[data-action=ping]', function(e){
+  // Dedicated button id for Check-Host extension
+  $(document).on('click', '.button[data-action=checkhost-ping]', function(e){
     e.preventDefault();
     var btn=$(this), id=btn.data('id');
     btn.prop('disabled',true).text(HOVPNM_CH.msgPinging);
