@@ -40,6 +40,13 @@ function add_server_action_ex($id, $icon_html, $title, $callback) {
     ];
 }
 
+function remove_server_action($id) {
+    $id = sanitize_title($id);
+    ColumnsRegistry::$actions = array_values(array_filter(ColumnsRegistry::$actions, function($a) use ($id){
+        return ($a['id'] ?? '') !== $id;
+    }));
+}
+
 // Hooks for extensions
 // do_action('vpnpm_before_dashboard_render')
 // do_action('vpnpm_after_dashboard_render')

@@ -15,6 +15,7 @@ add_action('admin_menu', function() {
     add_submenu_page('hovpnm', __('Extensions','hovpnm'), __('Extensions','hovpnm'), 'manage_options', 'hovpnm-extensions', __NAMESPACE__ . '\\render_extensions');
     add_submenu_page('hovpnm', __('Add Server','hovpnm'), __('Add Server','hovpnm'), 'manage_options', 'hovpnm-add-server', __NAMESPACE__ . '\\render_add_server');
     add_submenu_page('hovpnm', __('Settings','hovpnm'), __('Settings','hovpnm'), 'manage_options', 'hovpnm-settings', __NAMESPACE__ . '\\render_settings');
+    add_submenu_page('hovpnm', __('Deleted Servers','hovpnm'), __('Deleted Servers','hovpnm'), 'manage_options', 'hovpnm-deleted', __NAMESPACE__ . '\\render_deleted');
 });
 
 // Enqueue admin CSS on our pages
@@ -115,6 +116,42 @@ function render_settings() {
     }
     echo '</tbody></table>';
     echo '<p><button type="submit" class="button button-primary">' . esc_html__('Save Changes','hovpnm') . '</button></p>';
+    echo '</form>';
+
+    // Scheduler settings
+    $intervals = [
+        'five_minutes' => __('Every 5 minutes','hovpnm'),
+        'fifteen_minutes' => __('Every 15 minutes','hovpnm'),
+        'thirty_minutes' => __('Every 30 minutes','hovpnm'),
+        'hourly' => __('Hourly','hovpnm'),
+        'six_hours' => __('Every 6 hours','hovpnm'),
+        'twice_daily' => __('Twice Daily','hovpnm'),
+        'daily' => __('Daily','hovpnm'),
+    ];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('hovpnm_settings_scheduler')) {
+        $interval = sanitize_text_field($_POST['hovpnm_sched_interval'] ?? 'hourly');
+        $sources = isset($_POST['hovpnm_sched_sources']) && is_array($_POST['hovpnm_sched_sources']) ? array_values(array_map('sanitize_text_field', $_POST['hovpnm_sched_sources'])) : [];
+        update_option('hovpnm_sched_interval', $interval);
+        update_option('hovpnm_sched_sources', $sources);
+        echo '<div class="updated"><p>' . esc_html__('Scheduler settings saved.','hovpnm') . '</p></div>';
+    }
+    $cur_int = get_option('hovpnm_sched_interval', 'hourly');
+    $cur_src = get_option('hovpnm_sched_sources', ['server','checkhost']);
+    echo '<h2 class="title" style="margin-top:24px;">' . esc_html__('Auto-Ping Scheduler','hovpnm') . '</h2>';
+    echo '<form method="post">'; wp_nonce_field('hovpnm_settings_scheduler');
+    echo '<table class="form-table"><tbody>';
+    echo '<tr><th>' . esc_html__('Interval','hovpnm') . '</th><td><select name="hovpnm_sched_interval">';
+    foreach ($intervals as $k => $label) {
+        $sel = selected($cur_int, $k, false);
+        echo '<option value="' . esc_attr($k) . '" ' . $sel . '>' . esc_html($label) . '</option>';
+    }
+    echo '</select></td></tr>';
+    echo '<tr><th>' . esc_html__('Sources','hovpnm') . '</th><td>'
+        . '<label><input type="checkbox" name="hovpnm_sched_sources[]" value="server" ' . (in_array('server',$cur_src,true)?'checked':'') . '> ' . esc_html__('Server','hovpnm') . '</label> '
+        . '<label><input type="checkbox" name="hovpnm_sched_sources[]" value="checkhost" ' . (in_array('checkhost',$cur_src,true)?'checked':'') . '> ' . esc_html__('Check-Host','hovpnm') . '</label>'
+        . '</td></tr>';
+    echo '</tbody></table>';
+    echo '<p><button type="submit" class="button button-primary">' . esc_html__('Save Scheduler','hovpnm') . '</button></p>';
     echo '</form></div>';
 }
 
@@ -144,6 +181,17 @@ add_action('admin_post_hovpnm_add_server', function(){
     if (empty($data['file_name']) || empty($data['remote_host'])) {
         wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Please provide at least Name and Remote Host.','hovpnm')), admin_url('admin.php?page=hovpnm-add-server')));
         exit;
+    }
+    // Ensure unique file_name (case-insensitive)
+    if ($data['file_name'] !== '') {
+        global $wpdb; $t = \HOVPNM\Core\DB::table_name();
+        $base = $data['file_name'];
+        $candidate = $base; $i = 1;
+        while (true) {
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(1) FROM {$t} WHERE LOWER(file_name)=LOWER(%s)", $candidate));
+            if (!$exists) break; $i++; $candidate = preg_match('/-\d+$/', $base) ? preg_replace('/-\d+$/', '-' . $i, $base) : ($base . '-' . $i);
+        }
+        $data['file_name'] = $candidate;
     }
     $new_id = \HOVPNM\Core\Servers::insert($data);
     // Auto-detect location if not provided
@@ -205,6 +253,17 @@ add_action('admin_post_hovpnm_import_ovpn', function(){
         wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Could not parse required fields from file.','hovpnm')), admin_url('admin.php?page=hovpnm-add-server')));
         exit;
     }
+    // Ensure unique file_name (case-insensitive)
+    if ($data['file_name'] !== '') {
+        global $wpdb; $t = \HOVPNM\Core\DB::table_name();
+        $base = $data['file_name'];
+        $candidate = $base; $i = 1;
+        while (true) {
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(1) FROM {$t} WHERE LOWER(file_name)=LOWER(%s)", $candidate));
+            if (!$exists) break; $i++; $candidate = preg_match('/-\d+$/', $base) ? preg_replace('/-\d+$/', '-' . $i, $base) : ($base . '-' . $i);
+        }
+        $data['file_name'] = $candidate;
+    }
     $new_id = \HOVPNM\Core\Servers::insert($data);
     // Auto-detect location if empty
     if (empty($data['location']) && !empty($data['remote_host'])) {
@@ -255,7 +314,48 @@ add_action('admin_post_hovpnm_delete_server', function(){
         wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Invalid server ID.','hovpnm')), admin_url('admin.php?page=hovpnm')));
         exit;
     }
+    global $wpdb; $t = \HOVPNM\Core\DB::table_name();
+    $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t} WHERE id=%d", $id), ARRAY_A);
+    if ($row) {
+        $row['deleted_at'] = current_time('mysql');
+        $del_table = $wpdb->prefix . 'vpn_profiles_deleted';
+        // Ensure id is unique; if exists, bump id copy
+        $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(1) FROM {$del_table} WHERE id=%d", $id));
+        if ($exists) { $row['id'] = null; unset($row['id']); }
+        $wpdb->insert($del_table, $row);
+    }
     \HOVPNM\Core\Servers::delete($id);
     wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Server deleted.','hovpnm')), admin_url('admin.php?page=hovpnm')));
     exit;
 });
+
+function render_deleted() {
+    if (!current_user_can('manage_options')) return;
+    global $wpdb; $del_table = $wpdb->prefix . 'vpn_profiles_deleted';
+    $rows = $wpdb->get_results("SELECT * FROM {$del_table} ORDER BY deleted_at DESC");
+    echo '<div class="wrap"><h1>' . esc_html__('Deleted Servers','hovpnm') . '</h1>';
+    echo '<p>' . esc_html__('Archived for 30 days before permanent removal.','hovpnm') . '</p>';
+    echo '<table class="widefat striped"><thead><tr>'
+        . '<th>' . esc_html__('ID','hovpnm') . '</th>'
+        . '<th>' . esc_html__('Name','hovpnm') . '</th>'
+        . '<th>' . esc_html__('Remote Host','hovpnm') . '</th>'
+        . '<th>' . esc_html__('Type','hovpnm') . '</th>'
+        . '<th>' . esc_html__('Status','hovpnm') . '</th>'
+        . '<th>' . esc_html__('Deleted At','hovpnm') . '</th>'
+        . '</tr></thead><tbody>';
+    if ($rows) {
+        foreach ($rows as $r) {
+            echo '<tr>'
+                . '<td>' . esc_html($r->id) . '</td>'
+                . '<td>' . esc_html($r->file_name) . '</td>'
+                . '<td>' . esc_html($r->remote_host) . '</td>'
+                . '<td>' . esc_html($r->type) . '</td>'
+                . '<td>' . esc_html($r->status) . '</td>'
+                . '<td>' . esc_html($r->deleted_at) . '</td>'
+                . '</tr>';
+        }
+    } else {
+        echo '<tr><td colspan="6">' . esc_html__('No deleted servers.','hovpnm') . '</td></tr>';
+    }
+    echo '</tbody></table></div>';
+}

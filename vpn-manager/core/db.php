@@ -72,5 +72,32 @@ class DB {
             KEY tag (tag)
         ) {$charset_collate};";
         dbDelta($sql_tags);
+
+        // Deleted profiles archive table
+        $del_table = $wpdb->prefix . 'vpn_profiles_deleted';
+        $sql_del = "CREATE TABLE {$del_table} (
+            id bigint(20) unsigned NOT NULL,
+            file_name varchar(255) NOT NULL,
+            remote_host varchar(255) NOT NULL,
+            port int(11) DEFAULT NULL,
+            protocol varchar(20) DEFAULT NULL,
+            cipher varchar(100) DEFAULT NULL,
+            status varchar(20) DEFAULT 'unknown',
+            type varchar(20) DEFAULT 'standard',
+            location varchar(191) DEFAULT NULL,
+            notes text NULL,
+            ping_server_avg int(11) DEFAULT NULL,
+            ping_server_last_checked datetime DEFAULT NULL,
+            checkhost_ping_avg int(11) DEFAULT NULL,
+            checkhost_ping_json longtext NULL,
+            checkhost_last_checked datetime DEFAULT NULL,
+            checkhost_last_error text NULL,
+            created_at datetime DEFAULT NULL,
+            deleted_at datetime NOT NULL,
+            PRIMARY KEY (id),
+            KEY remote_host (remote_host),
+            KEY status (status)
+        ) {$charset_collate};";
+        dbDelta($sql_del);
     }
 }

@@ -7,11 +7,12 @@ require_once __DIR__ . '/admin-ui.php';
 
 use function HOVPNM\Core\register_server_column;
 use function HOVPNM\Core\add_server_action;
+use function HOVPNM\Core\add_server_action_ex;
 
 add_action('init', function(){
     register_server_column('ch_ping', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\col_ch_ping');
-    add_server_action(__('Ping','hovpnm'), __NAMESPACE__ . '\\action_ping');
-    add_server_action(__('More Ping','hovpnm'), __NAMESPACE__ . '\\action_more_ping');
+    add_server_action_ex('checkhost-ping', '<span class="dashicons dashicons-location"></span>', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\action_ping');
+    add_server_action_ex('more-ping', '<span class="dashicons dashicons-chart-line"></span>', __('More Ping','hovpnm'), __NAMESPACE__ . '\\action_more_ping');
 });
 
 function col_ch_ping($s) {
@@ -40,5 +41,6 @@ add_action('admin_enqueue_scripts', function($hook){
         'msgCHPing' => __('Check-Host Ping:','hovpnm'),
         'msgEditTitle' => __('Edit Server','hovpnm'),
     'msgClose' => __('Close','hovpnm'),
+    'historyAction' => 'hovpnm_ch_history',
     ]);
 });
