@@ -332,7 +332,11 @@ add_action('admin_post_hovpnm_delete_server', function(){
 function render_deleted() {
     if (!current_user_can('manage_options')) return;
     global $wpdb; $del_table = $wpdb->prefix . 'vpn_profiles_deleted';
-    $rows = $wpdb->get_results("SELECT * FROM {$del_table} ORDER BY deleted_at DESC");
+    // Ensure table exists
+    \HOVPNM\Core\DB::migrate();
+    $rows = [];
+    $sql = "SELECT * FROM {$del_table} ORDER BY deleted_at DESC";
+    $rows = $wpdb->get_results($sql);
     echo '<div class="wrap"><h1>' . esc_html__('Deleted Servers','hovpnm') . '</h1>';
     echo '<p>' . esc_html__('Archived for 30 days before permanent removal.','hovpnm') . '</p>';
     echo '<table class="widefat striped"><thead><tr>'

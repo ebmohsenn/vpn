@@ -52,6 +52,15 @@ add_action('hovpnm_purge_deleted', function(){
     $wpdb->query($wpdb->prepare("DELETE FROM {$del_table} WHERE deleted_at < %s", $threshold));
 });
 
+// Ensure DB migrations run after updates without requiring deactivation/activation
+add_action('init', function(){
+    $stored = get_option('hovpnm_db_version');
+    if ($stored !== HOVPNM_VERSION) {
+        \HOVPNM\Core\DB::migrate();
+        update_option('hovpnm_db_version', HOVPNM_VERSION);
+    }
+});
+
 // Custom intervals for scheduler
 add_filter('cron_schedules', function($schedules){
     $schedules['five_minutes'] = ['interval' => 5*60, 'display' => __('Every 5 minutes','hovpnm')];

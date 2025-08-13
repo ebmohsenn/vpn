@@ -111,19 +111,29 @@ add_action('admin_enqueue_scripts', function($hook){
     // Only on HO VPN Manager dashboard
     if ($hook !== 'toplevel_page_hovpnm') return;
     $nonce = wp_create_nonce('hovpnm_failover');
-    $js = 'jQuery(function($){\n'
-        . ' $(document).on("click", ".hovpnm-failover-btn", function(e){ e.preventDefault(); var id=$(this).data("id"); var btn=$(this); btn.prop("disabled",true).text("' . esc_js(__('Loading...','hovpnm')) . '");\n'
-        . ' $.post(ajaxurl, { action: "hovpnm_failover_suggestions", id: id, nonce: "' . esc_js($nonce) . '" }, function(res){\n'
-        . '   btn.prop("disabled",false).text("' . esc_js(__('Recommend','hovpnm')) . '");\n'
-        . '   if(!res || !res.success){ alert("' . esc_js(__('Failed to load recommendations','hovpnm')) . '"); return; }\n'
-        . '   var list = res.data && res.data.suggestions ? res.data.suggestions : [];\n'
-        . '   if(!list.length){ alert("' . esc_js(__('No suitable alternatives found right now.','hovpnm')) . '"); return; }\n'
-        . '   var msg = "' . esc_js(__('Recommended alternatives:','hovpnm')) . '\n";\n'
-        . '   list.forEach(function(it,idx){ msg += (idx+1)+". "+it.name+" ["+it.protocol+"] - "+it.ping+" ms - "+(it.location||"-")+"\\nHost: "+(it.remote_host||"-")+"\n\n"; });\n'
-        . '   alert(msg);\n'
-        . ' });\n'
-        . ' });\n'
-        . '});';
-    wp_add_inline_script('jquery-core', $js);
+        $loading = esc_js(__('Loading...','hovpnm'));
+        $recommend = esc_js(__('Recommend','hovpnm'));
+        $fail = esc_js(__('Failed to load recommendations','hovpnm'));
+        $none = esc_js(__('No suitable alternatives found right now.','hovpnm'));
+        $title = esc_js(__('Recommended alternatives:','hovpnm'));
+        $script = <<<JS
+jQuery(function($){
+    $(document).on('click', '.hovpnm-failover-btn', function(e){
+        e.preventDefault();
+        var id=$(this).data('id'); var btn=$(this);
+        btn.prop('disabled',true).text('{$loading}');
+        $.post(ajaxurl, { action: 'hovpnm_failover_suggestions', id: id, nonce: '{$nonce}' }, function(res){
+            btn.prop('disabled',false).text('{$recommend}');
+            if(!res || !res.success){ alert('{$fail}'); return; }
+            var list = res.data && res.data.suggestions ? res.data.suggestions : [];
+            if(!list.length){ alert('{$none}'); return; }
+            var msg = '{$title}\n';
+            list.forEach(function(it,idx){ msg += (idx+1)+'. '+it.name+' ['+(it.protocol||'-')+'] - '+(it.ping||'-')+' ms - '+(it.location||'-')+'\nHost: '+(it.remote_host||'-')+'\n\n'; });
+            alert(msg);
+        });
+    });
+});
+JS;
+        wp_add_inline_script('jquery-core', $script);
 });
 
