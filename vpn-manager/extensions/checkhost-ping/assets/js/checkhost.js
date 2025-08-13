@@ -4,7 +4,7 @@
     e.preventDefault();
     var btn=$(this), id=btn.data('id');
     btn.prop('disabled',true).text(HOVPNM_CH.msgPinging);
-    $.post(HOVPNM_CH.ajaxUrl, { action:'hovpnm_ch_ping', id:id, force:1, _ajax_nonce:HOVPNM_CH.nonce }, function(res){
+  $.post(HOVPNM_CH.ajaxUrl||HOVPNM_DASH.ajaxUrl, { action:'hovpnm_ch_ping', id:id, force:1, _ajax_nonce:HOVPNM_CH.nonce||HOVPNM_DASH.ajaxNonce }, function(res){
       btn.prop('disabled',false).text(HOVPNM_CH.msgPing);
       if(!res || !res.success){ alert(HOVPNM_CH.msgPingFailed); return; }
       var ping=parseInt(res.data.ping,10);
@@ -36,7 +36,7 @@
     if(!m.find('.hovpnm-modal-close').length){ m.find('> div').prepend('<button type="button" class="button hovpnm-modal-close" style="position:absolute; right:12px; top:12px;">&times;</button>'); }
     m.show();
     // Load history
-    $.get(HOVPNM_CH.ajaxUrl, { action: HOVPNM_CH.historyAction, id: id, _ajax_nonce: HOVPNM_CH.nonce }, function(res){
+  $.get(HOVPNM_CH.ajaxUrl||HOVPNM_DASH.ajaxUrl, { action: HOVPNM_CH.historyAction, id: id, _ajax_nonce: HOVPNM_CH.nonce||HOVPNM_DASH.ajaxNonce }, function(res){
       if(!res || !res.success){ return; }
       var items = res.data.items || [];
       var tbody = m.find('table.hovpnm-history tbody');

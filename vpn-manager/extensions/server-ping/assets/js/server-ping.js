@@ -3,7 +3,7 @@
     e.preventDefault();
     var btn=$(this), id=btn.data('id');
     btn.prop('disabled',true).text(HOVPNM_SP.msgPinging);
-    $.post(HOVPNM_SP.ajaxUrl, { action:'hovpnm_srv_ping', id:id, _ajax_nonce:HOVPNM_SP.nonce }, function(res){
+  $.post(HOVPNM_SP.ajaxUrl||HOVPNM_DASH.ajaxUrl, { action:'hovpnm_srv_ping', id:id, _ajax_nonce:HOVPNM_SP.nonce||HOVPNM_DASH.ajaxNonce }, function(res){
       btn.prop('disabled',false).text(HOVPNM_SP.msgPing);
       if(!res || !res.success){ alert(HOVPNM_SP.msgPingFailed); return; }
       var ping=parseInt(res.data.ping,10);

@@ -28,6 +28,8 @@ add_action('admin_enqueue_scripts', function($hook){
             wp_localize_script('hovpnm-dashboard', 'HOVPNM_DASH', [
                 'apiBase' => rest_url('hovpnm/v1/servers/'),
                 'nonce' => wp_create_nonce('wp_rest'),
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'ajaxNonce' => wp_create_nonce('hovpnm'),
                 'msgNoChange' => __('No changes or update failed.','hovpnm'),
         'msgFail' => __('Update failed.','hovpnm'),
         'msgPingAll' => __('Ping All','hovpnm'),
