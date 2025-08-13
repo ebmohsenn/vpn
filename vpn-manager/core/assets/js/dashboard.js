@@ -31,6 +31,26 @@
       .fail(function(){ alert(HOVPNM_DASH.msgFail); });
   });
 
+  // Column sorting: click headers to sort table rows
+  $(document).on('click', '.hovpnm-table thead th', function(){
+    var th=$(this); var idx=th.index();
+    // Skip Actions column (last)
+    var totalTh = th.closest('tr').find('th').length;
+    if(idx===0 || idx===totalTh-1) return; // keep Name sortable? set as needed
+    var tbody=th.closest('table').find('tbody');
+    var rows=tbody.find('tr').get();
+    var asc = !th.data('asc'); th.data('asc', asc);
+    rows.sort(function(a,b){
+      var ta=$(a).children().eq(idx).text().trim();
+      var tb=$(b).children().eq(idx).text().trim();
+      if($.isNumeric(ta) && $.isNumeric(tb)) {
+        return asc ? (parseFloat(ta)-parseFloat(tb)) : (parseFloat(tb)-parseFloat(ta));
+      }
+      return asc ? ta.localeCompare(tb) : tb.localeCompare(ta);
+    });
+    $.each(rows, function(_, r){ tbody.append(r); });
+  });
+
   // Ping All: clicks available ping buttons per row with small delay
   $(document).on('click', '.hovpnm-ping-all', function(e){
     e.preventDefault();

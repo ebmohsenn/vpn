@@ -20,12 +20,13 @@ add_action('wp_ajax_hovpnm_ch_ping', function(){
     // Update profile row with aggregates and status
     global $wpdb; $t = \HOVPNM\Core\DB::table_name();
     $now = current_time('mysql');
+    $status = ($value > 0 && $value < 10000) ? 'active' : 'down';
     $wpdb->update($t, [
         'checkhost_ping_avg' => (int)$value,
         'checkhost_last_checked' => $now,
-        'status' => ($value > 0 && $value < 10000) ? 'active' : 'down',
+        'status' => $status,
     ], ['id' => $id]);
-    wp_send_json_success(['id'=>$id,'ping'=>$value]);
+    wp_send_json_success(['id'=>$id,'ping'=>$value,'status'=>$status]);
 });
 
 // History endpoint (used by More Ping modal)

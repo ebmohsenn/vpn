@@ -6,14 +6,14 @@ use function HOVPNM\Core\add_server_action_ex;
 use function HOVPNM\Core\remove_server_action;
 
 add_action('init', function(){
-    // Replace separate ping buttons with one combined Ping if both extensions active
+    // Replace separate ping buttons with one combined Ping when any ping extension(s) active
     $active = get_option('vpnpm_active_extensions', []);
     if (!is_array($active)) $active = [];
-    if (in_array('server-ping', $active, true) && in_array('checkhost-ping', $active, true)) {
+    if (in_array('server-ping', $active, true) || in_array('checkhost-ping', $active, true)) {
         remove_server_action('server-ping');
         remove_server_action('checkhost-ping');
         remove_server_action('ping');
-    add_server_action_ex('ping', '', __('Ping','hovpnm'), __NAMESPACE__ . '\\action_ping');
+        add_server_action_ex('ping', '', __('Ping','hovpnm'), __NAMESPACE__ . '\\action_ping');
     }
 });
 

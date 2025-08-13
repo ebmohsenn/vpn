@@ -10,8 +10,8 @@ use function HOVPNM\Core\add_server_action;
 use function HOVPNM\Core\add_server_action_ex;
 
 add_action('init', function(){
-    register_server_column('ch_ping', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\col_ch_ping');
-    add_server_action_ex('checkhost-ping', '', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\action_ping');
+    register_server_column('ch_ping', __('Ping (Check-Host.Net)','hovpnm'), __NAMESPACE__ . '\\col_ch_ping');
+    add_server_action_ex('checkhost-ping', '', __('Ping (Check-Host.Net)','hovpnm'), __NAMESPACE__ . '\\action_ping');
     add_server_action_ex('more-ping', '', __('More Ping','hovpnm'), __NAMESPACE__ . '\\action_more_ping');
 });
 
@@ -34,13 +34,15 @@ add_action('admin_enqueue_scripts', function($hook){
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('hovpnm'),
         'msgPinging' => __('Pinging...','hovpnm'),
-        'msgPing' => __('Ping','hovpnm'),
+    'msgPing' => __('Ping (Check-Host.Net)','hovpnm'),
         'msgPingFailed' => __('Ping failed','hovpnm'),
         'msgMorePing' => __('More Ping','hovpnm'),
         'msgPingLabel' => __('Ping:','hovpnm'),
         'msgCHPing' => __('Check-Host Ping:','hovpnm'),
         'msgEditTitle' => __('Edit Server','hovpnm'),
     'msgClose' => __('Close','hovpnm'),
+    'msgActive' => __('Active','hovpnm'),
+    'msgDown' => __('Down','hovpnm'),
     'historyAction' => 'hovpnm_ch_history',
     ]);
 });

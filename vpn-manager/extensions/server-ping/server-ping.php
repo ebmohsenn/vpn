@@ -25,6 +25,8 @@ add_action('admin_enqueue_scripts', function($hook){
         'msgPinging' => __('Pinging...','hovpnm'),
         'msgPing' => __('Ping (Server)','hovpnm'),
         'msgPingFailed' => __('Ping failed','hovpnm'),
+    'msgActive' => __('Active','hovpnm'),
+    'msgDown' => __('Down','hovpnm'),
     ]);
 });
 
@@ -41,17 +43,27 @@ add_action('wp_ajax_hovpnm_srv_ping', function(){
     $ok = false;
     $host = $server->remote_host;
     $port = $server->port ?: 1194;
+    $proto = isset($server->protocol) ? strtolower($server->protocol) : '';
     $errno = 0; $errstr = '';
-    $fp = @fsockopen($host, $port, $errno, $errstr, 2.0);
-    if ($fp) { $ok = true; fclose($fp); }
+    if ($proto === 'udp') {
+        $fp = @stream_socket_client('udp://' . $host . ':' . $port, $errno, $errstr, 2.0);
+        if ($fp) { $ok = true; fclose($fp); }
+    } else {
+        $fp = @fsockopen($host, $port, $errno, $errstr, 2.0);
+        if ($fp) { $ok = true; fclose($fp); }
+    }
     $ms = (int) round((microtime(true) - $start) * 1000);
     // Update aggregates
     $avg = $ms; $now = current_time('mysql');
-    $wpdb->update($t, [
+    $update = [
         'ping_server_avg' => $avg,
         'ping_server_last_checked' => $now,
-        'status' => $ok ? 'active' : 'down',
-    ], ['id' => $id]);
+    ];
+    // Update status only for TCP (UDP cannot be reliably "connected")
+    if ($proto !== 'udp') {
+        $update['status'] = $ok ? 'active' : 'down';
+    }
+    $wpdb->update($t, $update, ['id' => $id]);
     // Insert into history
     $hist = $wpdb->prefix . 'vpn_ping_history';
     $wpdb->insert($hist, [
@@ -59,8 +71,10 @@ add_action('wp_ajax_hovpnm_srv_ping', function(){
         'source' => 'server',
         'ping_value' => $ms,
         'location' => \HOVPNM\Core\detect_location_for_host($host),
-        'status' => $ok ? 'active' : 'down',
+        'status' => ($proto !== 'udp') ? ($ok ? 'active' : 'down') : 'unknown',
         'timestamp' => current_time('mysql'),
     ]);
-    wp_send_json_success(['id'=>$id,'ping'=>$ms]);
+    $resp = ['id'=>$id,'ping'=>$ms];
+    if ($proto !== 'udp') { $resp['status'] = $ok ? 'active' : 'down'; }
+    wp_send_json_success($resp);
 });

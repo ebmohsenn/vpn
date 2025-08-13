@@ -14,6 +14,14 @@
         cell.text(ping+' ms').addClass('hovpnm-flash');
         setTimeout(function(){ cell.removeClass('hovpnm-flash'); }, 3000);
       }
+      // Update status cell
+      var stCell=row.find('td[data-col="status"]');
+      if(stCell.length){
+        var isUp = (res.data.status||'').toLowerCase()==='active';
+        var label = isUp ? HOVPNM_CH.msgActive : HOVPNM_CH.msgDown;
+        stCell.html('<span style="'+(isUp?'color:green;':'color:#a00;')+'">'+label+'</span>').addClass('hovpnm-flash');
+        setTimeout(function(){ stCell.removeClass('hovpnm-flash'); }, 3000);
+      }
     });
   });
 
