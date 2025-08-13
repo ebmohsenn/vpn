@@ -1,7 +1,6 @@
 <?php
 namespace HOVPNM\Ext\ServerPing;
 if (!defined('ABSPATH')) { exit; }
-
 use function HOVPNM\Core\register_server_column;
 use function HOVPNM\Core\add_server_action_ex;
 
@@ -63,7 +62,6 @@ function srv_compute_and_update($id) {
         $fp = @fsockopen($host, $port, $errno, $errstr, (float)$timeout);
         if ($fp) { $ok = true; fclose($fp); }
     }
-<<<<<<< HEAD
     $elapsed = (int) round((microtime(true) - $start) * 1000);
     if ($ok) { $ms = $elapsed; }
 
@@ -81,25 +79,6 @@ function srv_compute_and_update($id) {
         error_log($msg);
     }
 
-=======
-    $elapsed = (int) round((microtime(true) - $start) * 1000);
-    if ($ok) { $ms = $elapsed; }
-
-    // Fallback to exec('ping') if sockets failed
-    if (!$ok && function_exists('exec')) {
-        $method = 'exec-ping';
-        $ms = exec_ping_ms($host, $timeout);
-        $ok = is_int($ms) && $ms >= 0; // ms is int on success
-        if (!$ok) { $ms = null; }
-    }
-
-    // Debug logging
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        $msg = sprintf('[HOVPNM] srv_ping id=%d host=%s method=%s ms=%s errno=%d err="%s"', (int)$id, (string)$host, $method, ($ms===null?'null':(string)$ms), (int)$errno, (string)$errstr);
-        error_log($msg);
-    }
-
->>>>>>> e865060d0d88615cd0a8f5f82b7598ebbede094b
     $avg = $ok ? $ms : null; $now = current_time('mysql');
     $update = [
         'ping_server_avg' => $avg,
