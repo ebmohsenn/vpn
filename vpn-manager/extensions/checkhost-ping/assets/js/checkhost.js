@@ -4,24 +4,28 @@
     e.preventDefault();
     var btn=$(this), id=btn.data('id');
     btn.prop('disabled',true).text(HOVPNM_CH.msgPinging);
-  $.post(HOVPNM_CH.ajaxUrl||HOVPNM_DASH.ajaxUrl, { action:'hovpnm_ch_ping', id:id, force:1, _ajax_nonce:HOVPNM_CH.nonce||HOVPNM_DASH.ajaxNonce }, function(res){
+    $.post(HOVPNM_CH.ajaxUrl||HOVPNM_DASH.ajaxUrl, { action:'hovpnm_ch_ping', id:id, force:1, _ajax_nonce:HOVPNM_CH.nonce||HOVPNM_DASH.ajaxNonce })
+    .done(function(res){
       btn.prop('disabled',false).text(HOVPNM_CH.msgPing);
-      if(!res || !res.success){ alert(HOVPNM_CH.msgPingFailed); return; }
+      if(!res || !res.success || typeof res.data==='undefined' || typeof res.data.ping==='undefined'){
+        var row=btn.closest('tr');
+        var cell=row.find('td[data-col="ch_ping"]');
+        if(cell.length){ cell.text('Error').addClass('hovpnm-flash'); setTimeout(function(){ cell.removeClass('hovpnm-flash'); }, 3000); }
+        return;
+      }
       var ping=parseInt(res.data.ping,10);
       var row=btn.closest('tr');
       var cell=row.find('td[data-col="ch_ping"]');
-      if(cell.length){
+      if(cell.length && !isNaN(ping) && ping>0){
         cell.text(ping+' ms').addClass('hovpnm-flash');
         setTimeout(function(){ cell.removeClass('hovpnm-flash'); }, 3000);
       }
-      // Update status cell
-      var stCell=row.find('td[data-col="status"]');
-      if(stCell.length){
-        var isUp = (res.data.status||'').toLowerCase()==='active';
-        var label = isUp ? HOVPNM_CH.msgActive : HOVPNM_CH.msgDown;
-        stCell.html('<span style="'+(isUp?'color:green;':'color:#a00;')+'">'+label+'</span>').addClass('hovpnm-flash');
-        setTimeout(function(){ stCell.removeClass('hovpnm-flash'); }, 3000);
-      }
+    })
+    .fail(function(){
+      btn.prop('disabled',false).text(HOVPNM_CH.msgPing);
+      var row=btn.closest('tr');
+      var cell=row.find('td[data-col="ch_ping"]');
+      if(cell.length){ cell.text('Error').addClass('hovpnm-flash'); setTimeout(function(){ cell.removeClass('hovpnm-flash'); }, 3000); }
     });
   });
 

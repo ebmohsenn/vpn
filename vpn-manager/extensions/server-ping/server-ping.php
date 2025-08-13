@@ -35,10 +35,16 @@ add_action('wp_ajax_hovpnm_srv_ping', function(){
     check_ajax_referer('hovpnm');
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if (!$id) wp_send_json_error(['message'=>'Invalid id'], 400);
+    $resp = srv_compute_and_update($id);
+    if (!$resp) wp_send_json_error(['message'=>'Not found'], 404);
+    wp_send_json_success($resp);
+});
+
+// Reusable compute/update for server-local ping; returns payload for UI updates.
+function srv_compute_and_update($id) {
     global $wpdb; $t = \HOVPNM\Core\DB::table_name();
     $server = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t} WHERE id=%d", $id));
-    if (!$server) wp_send_json_error(['message'=>'Not found'], 404);
-    // Simple HEAD request as a placeholder for real ping to OpenVPN server
+    if (!$server) return null;
     $start = microtime(true);
     $ok = false;
     $host = $server->remote_host;
@@ -53,18 +59,13 @@ add_action('wp_ajax_hovpnm_srv_ping', function(){
         if ($fp) { $ok = true; fclose($fp); }
     }
     $ms = (int) round((microtime(true) - $start) * 1000);
-    // Update aggregates
     $avg = $ms; $now = current_time('mysql');
     $update = [
         'ping_server_avg' => $avg,
         'ping_server_last_checked' => $now,
     ];
-    // Update status only for TCP (UDP cannot be reliably "connected")
-    if ($proto !== 'udp') {
-        $update['status'] = $ok ? 'active' : 'down';
-    }
+    if ($proto !== 'udp') { $update['status'] = $ok ? 'active' : 'down'; }
     $wpdb->update($t, $update, ['id' => $id]);
-    // Insert into history
     $hist = $wpdb->prefix . 'vpn_ping_history';
     $wpdb->insert($hist, [
         'server_id' => $id,
@@ -76,5 +77,8 @@ add_action('wp_ajax_hovpnm_srv_ping', function(){
     ]);
     $resp = ['id'=>$id,'ping'=>$ms];
     if ($proto !== 'udp') { $resp['status'] = $ok ? 'active' : 'down'; }
-    wp_send_json_success($resp);
-});
+    return $resp;
+}
+
+// Internal scheduler hook
+add_action('hovpnm_internal_server_ping', __NAMESPACE__ . '\\srv_compute_and_update');
