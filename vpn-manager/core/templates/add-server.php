@@ -72,4 +72,29 @@ if (!defined('ABSPATH')) { exit; }
     </p>
     <?php submit_button(__('Import','hovpnm')); ?>
   </form>
+
+  <hr/>
+
+  <h2 class="title"><?php echo esc_html__('Batch import: multiple .ovpn files', 'hovpnm'); ?></h2>
+  <form method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+    <?php wp_nonce_field('hovpnm_import_ovpn_multi'); ?>
+    <input type="hidden" name="action" value="hovpnm_import_ovpn_multi" />
+    <p>
+      <input type="file" name="ovpn_files[]" accept=".ovpn" multiple />
+    </p>
+    <?php submit_button(__('Import all','hovpnm')); ?>
+  </form>
+
+  <hr/>
+
+  <h2 class="title"><?php echo esc_html__('Batch import: CSV', 'hovpnm'); ?></h2>
+  <p class="description"><?php echo esc_html__('CSV columns: file_name, remote_host, port, protocol (udp|tcp), cipher, type (standard|premium|free), location, notes', 'hovpnm'); ?></p>
+  <form method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+    <?php wp_nonce_field('hovpnm_import_csv'); ?>
+    <input type="hidden" name="action" value="hovpnm_import_csv" />
+    <p>
+      <input type="file" name="csv_file" accept=".csv,text/csv" />
+    </p>
+    <?php submit_button(__('Import CSV','hovpnm')); ?>
+  </form>
 </div>

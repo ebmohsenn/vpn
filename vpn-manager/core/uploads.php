@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) { exit; }
 add_filter('upload_mimes', function($mimes){
     if (!current_user_can('manage_options')) return $mimes;
     $mimes['ovpn'] = 'application/x-openvpn-profile';
+    $mimes['csv'] = 'text/csv';
     return $mimes;
 });
 

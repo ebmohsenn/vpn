@@ -284,6 +284,131 @@ add_action('admin_post_hovpnm_import_ovpn', function(){
     exit;
 });
 
+// Handle multi OVPN import
+add_action('admin_post_hovpnm_import_ovpn_multi', function(){
+    if (!current_user_can('manage_options')) wp_die(__('Forbidden','hovpnm'));
+    check_admin_referer('hovpnm_import_ovpn_multi');
+    if (empty($_FILES['ovpn_files']['name']) || !is_array($_FILES['ovpn_files']['name'])) {
+        wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('No files selected.','hovpnm')), admin_url('admin.php?page=hovpnm-add-server')));
+        exit;
+    }
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    $overrides = ['test_form' => false];
+    $names = $_FILES['ovpn_files']['name'];
+    $tmp_names = $_FILES['ovpn_files']['tmp_name'];
+    $errs = $_FILES['ovpn_files']['error'];
+    $count = 0; $fail = 0;
+    foreach ($names as $idx => $name) {
+        if (!empty($errs[$idx]) || empty($tmp_names[$idx])) { $fail++; continue; }
+        $file_array = [
+            'name' => $name,
+            'tmp_name' => $tmp_names[$idx],
+        ];
+        // Use wp_handle_upload directly with provided array
+        $file = wp_handle_upload($file_array, $overrides);
+        if (isset($file['error'])) { $fail++; continue; }
+        $path = $file['file'];
+        $content = @file_get_contents($path);
+        if ($content === false) { $fail++; continue; }
+        $remote = ''; $port = null; $proto = null; $cipher = '';
+        if (preg_match('/^\s*remote\s+([^\s]+)(?:\s+(\d+))?/mi', $content, $m)) {
+            $remote = $m[1]; if (!empty($m[2])) $port = intval($m[2]);
+        }
+        if (preg_match('/^\s*proto\s+(udp|tcp)/mi', $content, $m)) { $proto = strtolower($m[1]); }
+        if (preg_match('/^\s*cipher\s+([^\s]+)/mi', $content, $m)) { $cipher = $m[1]; }
+        $data = [
+            'file_name' => sanitize_file_name(basename($path)),
+            'remote_host' => sanitize_text_field($remote),
+            'port' => $port,
+            'protocol' => $proto,
+            'cipher' => sanitize_text_field($cipher),
+            'type' => 'standard',
+            'status' => 'unknown',
+        ];
+        if (empty($data['file_name']) || empty($data['remote_host'])) { $fail++; continue; }
+        // Ensure unique name
+        global $wpdb; $t = \HOVPNM\Core\DB::table_name();
+        $base = $data['file_name']; $candidate = $base; $i = 1;
+        while (true) {
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(1) FROM {$t} WHERE LOWER(file_name)=LOWER(%s)", $candidate));
+            if (!$exists) break; $i++; $candidate = preg_match('/-\d+$/', $base) ? preg_replace('/-\d+$/', '-' . $i, $base) : ($base . '-' . $i);
+        }
+        $data['file_name'] = $candidate;
+        $new_id = \HOVPNM\Core\Servers::insert($data);
+        if (empty($data['location']) && !empty($data['remote_host'])) {
+            $loc = detect_location_for_host($data['remote_host']);
+            if ($loc !== '') { \HOVPNM\Core\Servers::update($new_id, ['location' => $loc]); }
+        }
+        do_action('vpnpm_server_added', $new_id, $data);
+        $count++;
+    }
+    $msg = sprintf(\__('Imported %d files. %d failed.','hovpnm'), $count, $fail);
+    wp_redirect(add_query_arg('hovpnm_notice', rawurlencode($msg), admin_url('admin.php?page=hovpnm')));
+    exit;
+});
+
+// Handle CSV import
+add_action('admin_post_hovpnm_import_csv', function(){
+    if (!current_user_can('manage_options')) wp_die(__('Forbidden','hovpnm'));
+    check_admin_referer('hovpnm_import_csv');
+    if (empty($_FILES['csv_file']['name'])) {
+        wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('No file selected.','hovpnm')), admin_url('admin.php?page=hovpnm-add-server')));
+        exit;
+    }
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    $overrides = ['test_form' => false];
+    $file = wp_handle_upload($_FILES['csv_file'], $overrides);
+    if (isset($file['error'])) {
+        wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(sprintf(__('Upload error: %s','hovpnm'), $file['error'])), admin_url('admin.php?page=hovpnm-add-server')));
+        exit;
+    }
+    $path = $file['file'];
+    $fh = @fopen($path, 'r');
+    if (!$fh) {
+        wp_redirect(add_query_arg('hovpnm_notice', rawurlencode(__('Unable to read uploaded file.','hovpnm')), admin_url('admin.php?page=hovpnm-add-server')));
+        exit;
+    }
+    $count = 0; $fail = 0;
+    $headers = null;
+    while (($row = fgetcsv($fh)) !== false) {
+        if ($headers === null) { $headers = array_map('trim', $row); continue; }
+        $data = array_combine($headers, array_map('trim', $row));
+        if ($data === false) { $fail++; continue; }
+        $allowed_types = ['standard','premium','free'];
+        $payload = [
+            'file_name'   => sanitize_file_name($data['file_name'] ?? ''),
+            'remote_host' => sanitize_text_field($data['remote_host'] ?? ''),
+            'port'        => isset($data['port']) && $data['port'] !== '' ? intval($data['port']) : null,
+            'protocol'    => in_array(strtolower($data['protocol'] ?? ''), ['udp','tcp'], true) ? strtolower($data['protocol']) : null,
+            'cipher'      => sanitize_text_field($data['cipher'] ?? ''),
+            'type'        => in_array($data['type'] ?? 'standard', $allowed_types, true) ? $data['type'] : 'standard',
+            'location'    => sanitize_text_field($data['location'] ?? ''),
+            'notes'       => wp_kses_post($data['notes'] ?? ''),
+            'status'      => 'unknown',
+        ];
+        if (empty($payload['file_name']) || empty($payload['remote_host'])) { $fail++; continue; }
+        // Ensure unique file_name
+        global $wpdb; $t = \HOVPNM\Core\DB::table_name();
+        $base = $payload['file_name']; $candidate = $base; $i = 1;
+        while (true) {
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(1) FROM {$t} WHERE LOWER(file_name)=LOWER(%s)", $candidate));
+            if (!$exists) break; $i++; $candidate = preg_match('/-\d+$/', $base) ? preg_replace('/-\d+$/', '-' . $i, $base) : ($base . '-' . $i);
+        }
+        $payload['file_name'] = $candidate;
+        $new_id = \HOVPNM\Core\Servers::insert($payload);
+        if (empty($payload['location']) && !empty($payload['remote_host'])) {
+            $loc = detect_location_for_host($payload['remote_host']);
+            if ($loc !== '') { \HOVPNM\Core\Servers::update($new_id, ['location' => $loc]); }
+        }
+        do_action('vpnpm_server_added', $new_id, $payload);
+        $count++;
+    }
+    fclose($fh);
+    $msg = sprintf(\__('Imported %d servers from CSV. %d failed.','hovpnm'), $count, $fail);
+    wp_redirect(add_query_arg('hovpnm_notice', rawurlencode($msg), admin_url('admin.php?page=hovpnm')));
+    exit;
+});
+
 // Handle update server
 add_action('admin_post_hovpnm_update_server', function(){
     if (!current_user_can('manage_options')) wp_die(__('Forbidden','hovpnm'));
