@@ -15,6 +15,7 @@ add_action('admin_menu', function() {
     add_submenu_page('hovpnm', __('Extensions','hovpnm'), __('Extensions','hovpnm'), 'manage_options', 'hovpnm-extensions', __NAMESPACE__ . '\\render_extensions');
     add_submenu_page('hovpnm', __('Add Server','hovpnm'), __('Add Server','hovpnm'), 'manage_options', 'hovpnm-add-server', __NAMESPACE__ . '\\render_add_server');
     add_submenu_page('hovpnm', __('Settings','hovpnm'), __('Settings','hovpnm'), 'manage_options', 'hovpnm-settings', __NAMESPACE__ . '\\render_settings');
+    add_submenu_page('hovpnm', __('Auto-Ping Scheduler','hovpnm'), __('Auto-Ping Scheduler','hovpnm'), 'manage_options', 'hovpnm-scheduler', __NAMESPACE__ . '\\render_scheduler');
     add_submenu_page('hovpnm', __('Deleted Servers','hovpnm'), __('Deleted Servers','hovpnm'), 'manage_options', 'hovpnm-deleted', __NAMESPACE__ . '\\render_deleted');
 });
 
@@ -116,9 +117,11 @@ function render_settings() {
     }
     echo '</tbody></table>';
     echo '<p><button type="submit" class="button button-primary">' . esc_html__('Save Changes','hovpnm') . '</button></p>';
-    echo '</form>';
+    echo '</form></div>';
+}
 
-    // Scheduler settings
+function render_scheduler() {
+    if (!current_user_can('manage_options')) return;
     $intervals = [
         'five_minutes' => __('Every 5 minutes','hovpnm'),
         'fifteen_minutes' => __('Every 15 minutes','hovpnm'),
@@ -137,7 +140,7 @@ function render_settings() {
     }
     $cur_int = get_option('hovpnm_sched_interval', 'hourly');
     $cur_src = get_option('hovpnm_sched_sources', ['server','checkhost']);
-    echo '<h2 class="title" style="margin-top:24px;">' . esc_html__('Auto-Ping Scheduler','hovpnm') . '</h2>';
+    echo '<div class="wrap"><h1>' . esc_html__('Auto-Ping Scheduler','hovpnm') . '</h1>';
     echo '<form method="post">'; wp_nonce_field('hovpnm_settings_scheduler');
     echo '<table class="form-table"><tbody>';
     echo '<tr><th>' . esc_html__('Interval','hovpnm') . '</th><td><select name="hovpnm_sched_interval">';

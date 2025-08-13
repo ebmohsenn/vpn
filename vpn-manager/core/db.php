@@ -31,7 +31,6 @@ class DB {
             type varchar(20) DEFAULT 'standard',
             location varchar(191) DEFAULT NULL,
             notes text NULL,
-            -- Aggregated pings and last-checked timestamps
             ping_server_avg int(11) DEFAULT NULL,
             ping_server_last_checked datetime DEFAULT NULL,
             checkhost_ping_avg int(11) DEFAULT NULL,

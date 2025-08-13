@@ -11,8 +11,8 @@ use function HOVPNM\Core\add_server_action_ex;
 
 add_action('init', function(){
     register_server_column('ch_ping', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\col_ch_ping');
-    add_server_action_ex('checkhost-ping', '<span class="dashicons dashicons-location"></span>', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\action_ping');
-    add_server_action_ex('more-ping', '<span class="dashicons dashicons-chart-line"></span>', __('More Ping','hovpnm'), __NAMESPACE__ . '\\action_more_ping');
+    add_server_action_ex('checkhost-ping', '', __('Ping (Check-Host)','hovpnm'), __NAMESPACE__ . '\\action_ping');
+    add_server_action_ex('more-ping', '', __('More Ping','hovpnm'), __NAMESPACE__ . '\\action_more_ping');
 });
 
 function col_ch_ping($s) {

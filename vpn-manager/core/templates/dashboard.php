@@ -90,9 +90,7 @@ $actions = ColumnsRegistry::$actions;
           <a href="#" class="button button-secondary hovpnm-edit-btn" data-id="<?php echo (int)$s->id; ?>" data-name="<?php echo esc_attr($s->file_name); ?>" data-remote="<?php echo esc_attr($s->remote_host); ?>" data-port="<?php echo esc_attr($s->port); ?>" data-protocol="<?php echo esc_attr($s->protocol); ?>" data-cipher="<?php echo esc_attr($s->cipher); ?>" data-type="<?php echo esc_attr($s->type); ?>" data-location="<?php echo esc_attr($s->location); ?>" data-notes="<?php echo esc_attr((string)($s->notes ?? '')); ?>"><?php esc_html_e('Edit','hovpnm'); ?></a>
           <?php foreach ($actions as $act): ?>
             <?php if (is_callable($act['cb'])): ?>
-              <a href="#" class="button" data-id="<?php echo (int)$s->id; ?>" data-action="<?php echo esc_attr($act['id'] ?? sanitize_title($act['label'])); ?>" title="<?php echo esc_attr($act['title'] ?? $act['label']); ?>">
-                <?php echo !empty($act['icon']) ? wp_kses_post($act['icon']) : esc_html($act['label']); ?>
-              </a>
+              <a href="#" class="button" data-id="<?php echo (int)$s->id; ?>" data-action="<?php echo esc_attr($act['id'] ?? sanitize_title($act['label'])); ?>" title="<?php echo esc_attr($act['title'] ?? $act['label']); ?>"><?php echo esc_html($act['label']); ?></a>
             <?php endif; ?>
           <?php endforeach; ?>
           <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-block; margin-left:4px;">

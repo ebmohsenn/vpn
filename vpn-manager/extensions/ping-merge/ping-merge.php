@@ -13,7 +13,7 @@ add_action('init', function(){
         remove_server_action('server-ping');
         remove_server_action('checkhost-ping');
         remove_server_action('ping');
-        add_server_action_ex('ping', '<span class="dashicons dashicons-controls-play"></span>', __('Ping','hovpnm'), __NAMESPACE__ . '\\action_ping');
+    add_server_action_ex('ping', '', __('Ping','hovpnm'), __NAMESPACE__ . '\\action_ping');
     }
 });
 
