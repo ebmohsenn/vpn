@@ -127,8 +127,8 @@ jQuery(function($){
             if(!res || !res.success){ alert('{$fail}'); return; }
             var list = res.data && res.data.suggestions ? res.data.suggestions : [];
             if(!list.length){ alert('{$none}'); return; }
-            var msg = '{$title}\n';
-            list.forEach(function(it,idx){ msg += (idx+1)+'. '+it.name+' ['+(it.protocol||'-')+'] - '+(it.ping||'-')+' ms - '+(it.location||'-')+'\nHost: '+(it.remote_host||'-')+'\n\n'; });
+            var msg = '{$title}\\n';
+            list.forEach(function(it,idx){ msg += (idx+1)+'. '+it.name+' ['+(it.protocol||'-')+'] - '+(it.ping||'-')+' ms - '+(it.location||'-')+'\\nHost: '+(it.remote_host||'-')+'\\n\\n'; });
             alert(msg);
         });
     });
