@@ -16,6 +16,14 @@ add_action('init', function(){
         }
         return 'N/A';
     });
+    // Ensure 'ping' column is visible for users that had older settings
+    $visible = get_option('hovpnm_visible_columns');
+    if (is_array($visible)) {
+        if (!in_array('ping', $visible, true)) {
+            $visible[] = 'ping';
+            update_option('hovpnm_visible_columns', array_values(array_unique($visible)));
+        }
+    }
     register_server_column('type', __('Type','hovpnm'), function($s){
         $t = isset($s->type)? $s->type : 'standard';
         return esc_html(ucfirst($t));

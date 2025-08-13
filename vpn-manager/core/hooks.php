@@ -55,6 +55,9 @@ function remove_server_action($id) {
 add_action('init', function(){
     // Always have a Ping action in core
     remove_server_action('ping');
+    // Remove legacy ping action IDs if present
+    remove_server_action('server-ping');
+    remove_server_action('checkhost-ping');
     add_server_action_ex('ping', '', __('Ping','hovpnm'), __NAMESPACE__ . '\\core_action_ping');
 });
 
