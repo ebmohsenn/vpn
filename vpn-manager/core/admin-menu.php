@@ -36,16 +36,6 @@ add_action('admin_enqueue_scripts', function($hook){
         'msgPingingAll' => __('Pinging All...','hovpnm'),
         'msgNoPingBtns' => __('No ping actions available on this page.','hovpnm'),
             ]);
-            // Ensure core ping JS is available
-            wp_enqueue_script('hovpnm-core-ping', HOVPNM_PLUGIN_URL . 'core/assets/js/core-ping.js', ['jquery'], HOVPNM_VERSION, true);
-            wp_localize_script('hovpnm-core-ping', 'HOVPNM_CP', [
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('hovpnm'),
-                'msgPinging' => __('Pinging...','hovpnm'),
-                'msgPing' => __('Ping','hovpnm'),
-                'msgActive' => __('Active','hovpnm'),
-                'msgDown' => __('Down','hovpnm'),
-            ]);
         }
     }
 });
