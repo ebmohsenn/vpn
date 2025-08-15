@@ -17,11 +17,13 @@ class Bootstrap {
         $base = dirname(__DIR__);
         $ext_dir = trailingslashit($base) . 'extensions';
         if (!is_dir($ext_dir)) return;
-        $active = get_option('vpnpm_active_extensions', []);
-        if (!is_array($active)) $active = [];
+    $active = get_option('vpnpm_active_extensions', []);
+    if (!is_array($active)) $active = [];
     // Auto-sanitize active list: remove deprecated ping providers
     $active = array_values(array_filter($active, function($slug){ return !in_array($slug, ['checkhost-ping','ping-merge','server-ping'], true); }));
-        update_option('vpnpm_active_extensions', $active);
+    // Ensure core Ping extension is active by default
+    if (!in_array('ping', $active, true)) { $active[] = 'ping'; }
+    update_option('vpnpm_active_extensions', $active);
         foreach (scandir($ext_dir) as $folder) {
             if ($folder === '.' || $folder === '..') continue;
             $path = $ext_dir . '/' . $folder;

@@ -9,21 +9,7 @@ add_action('init', function(){
         $class = $st === 'active' ? 'color:green;' : ($st === 'down' ? 'color:#a00;' : 'color:#555;');
         return '<span style="' . esc_attr($class) . '">' . esc_html(ucfirst($st)) . '</span>';
     });
-    // Always include server ping column in core
-    register_server_column('ping', __('Ping (Server)','hovpnm'), function($s){
-        if (!empty($s->ping_server_avg)) {
-            return intval($s->ping_server_avg) . ' ms';
-        }
-        return 'N/A';
-    });
-    // Ensure 'ping' column is visible for users that had older settings
-    $visible = get_option('hovpnm_visible_columns');
-    if (is_array($visible)) {
-        if (!in_array('ping', $visible, true)) {
-            $visible[] = 'ping';
-            update_option('hovpnm_visible_columns', array_values(array_unique($visible)));
-        }
-    }
+    // Ping column is provided by Ping extension
     register_server_column('type', __('Type','hovpnm'), function($s){
         $t = isset($s->type)? $s->type : 'standard';
         return esc_html(ucfirst($t));
