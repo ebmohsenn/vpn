@@ -18,7 +18,7 @@ jobs:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
-          protocol: ftp          # <-- switch here to ftps
+          protocol: ftps          # <-- switch here to ftps
           port: 21                # usually port 21 for explicit FTPS
           local-dir: ./vpn-manager/    # your local plugin folder
           server-dir: /public_html/wp-content/plugins/vpn-manager/
